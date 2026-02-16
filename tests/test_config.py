@@ -5,15 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from vibraphone.config import VibraphoneConfig, clear_config_cache, get_config
-
-# Import find_config_file for discovery tests - will fail until implemented
-try:
-    from vibraphone.config import find_config_file
-
-    FIND_CONFIG_AVAILABLE = True
-except ImportError:
-    FIND_CONFIG_AVAILABLE = False
+from vibraphone.config import (
+    VibraphoneConfig,
+    clear_config_cache,
+    find_config_file,
+    get_config,
+)
 
 
 class TestGetConfig:
@@ -66,9 +63,6 @@ class TestVibraphoneConfig:
         assert config.project_root == Path("/tmp")
 
 
-@pytest.mark.skipif(
-    not FIND_CONFIG_AVAILABLE, reason="find_config_file not implemented yet"
-)
 class TestFindConfigFile:
     """Tests for config file discovery by walking up directories."""
 

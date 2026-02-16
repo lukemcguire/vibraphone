@@ -56,3 +56,41 @@ def clear_config_cache() -> None:
     """Clear the cached config. Useful for testing."""
     global _config
     _config = None
+
+
+def find_config_file() -> Path | None:
+    """Walk up directories to find vibraphone.yaml.
+
+    Search stops at:
+    - First vibraphone.yaml found
+    - .git directory (project root boundary)
+    - $HOME directory (fallback boundary)
+
+    Follows symlinks via Path.resolve().
+
+    Returns:
+        Path to vibraphone.yaml or None if not found.
+    """
+    current = Path.cwd().resolve()
+    home = Path.home().resolve()
+
+    while True:
+        # Check for config file first
+        config_path = current / "vibraphone.yaml"
+        if config_path.is_file():
+            return config_path
+
+        # Check for .git directory (project root)
+        if (current / ".git").exists():
+            return None
+
+        # Check if we've reached home
+        if current == home:
+            return None
+
+        # Move up
+        parent = current.parent
+        if parent == current:
+            # Filesystem root
+            return None
+        current = parent
