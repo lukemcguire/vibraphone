@@ -4,58 +4,84 @@ Config is loaded lazily on first access, not on server startup.
 This allows the server to start without vibraphone.yaml present.
 """
 
-from dataclasses import dataclass
+import sys
+from difflib import get_close_matches
 from pathlib import Path
+from typing import Any
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+# Default worktree path (CFG-04)
+DEFAULT_WORKTREES_PATH = Path.home() / ".vibraphone" / "worktrees"
+
+# Known top-level fields for typo detection
+KNOWN_TOP_LEVEL_FIELDS = {"project", "components", "quality_gate", "worktree", "review", "beads", "stitch"}
+
+# difflib cutoff for typo suggestions
+TYPO_SUGGESTION_CUTOFF = 0.6
 
 
-@dataclass
-class VibraphoneConfig:
-    """Configuration for vibraphone MCP server.
+class ProjectConfig(BaseModel):
+    """Project identification."""
 
-    This is a stub for Phase 2. Full implementation will include
-    worktree paths, quality gate settings, and stack configuration.
+    name: str = "unnamed-project"
+    version: str = "0.1.0"
+
+
+class WorktreeConfig(BaseModel):
+    """Worktree settings."""
+
+    base_branch: str = "main"
+    prefix: str = "feat/"
+    auto_cleanup: bool = False
+
+
+class QualityGateConfig(BaseModel):
+    """Quality gate settings."""
+
+    require_tests: bool = True
+    require_lint: bool = True
+    require_review: bool = True
+    review_severity_threshold: str = "error"
+    max_test_attempts: int = Field(default=10, ge=1)
+    max_review_attempts: int = Field(default=5, ge=1)
+
+
+class VibraphoneConfig(BaseModel):
+    """Full vibraphone.yaml configuration.
+
+    Compatible with existing vibraphone-template format.
+    All fields have sensible defaults.
+    Unknown fields trigger warnings but don't fail loading.
     """
 
-    project_root: Path
-    # Phase 2 will add:
-    # worktrees_path: Path
-    # quality_gate: QualityGateConfig
-    # stack: StackConfig
+    model_config = ConfigDict(extra="allow")
 
+    project: ProjectConfig = Field(default_factory=ProjectConfig)
+    worktree: WorktreeConfig = Field(default_factory=WorktreeConfig)
+    quality_gate: QualityGateConfig = Field(default_factory=QualityGateConfig)
 
-_config: VibraphoneConfig | None = None
+    # The key configurable path (CFG-04)
+    worktrees_path: Path = Field(default=DEFAULT_WORKTREES_PATH)
 
+    @field_validator("project", "worktree", "quality_gate", mode="before")
+    @classmethod
+    def handle_none_sections(cls, v: Any) -> Any:
+        """Convert None to empty dict for optional sections."""
+        if v is None:
+            return {}
+        return v
 
-def get_config() -> VibraphoneConfig | None:
-    """Load config lazily. Returns None if vibraphone.yaml not found.
-
-    This implements the lazy loading pattern from RESEARCH.md:
-    - Config loads on first access, not on server startup
-    - Returns None when vibraphone.yaml is absent (PKG-04)
-    - Caches result for subsequent calls
-
-    Full implementation coming in Phase 2: Configuration & Core Utilities.
-    """
-    global _config
-    if _config is not None:
-        return _config
-
-    # Stub: Check for vibraphone.yaml in current directory
-    # Phase 2 will implement directory walking and YAML parsing
-    config_path = Path.cwd() / "vibraphone.yaml"
-    if not config_path.exists():
-        return None
-
-    # Placeholder: Would parse YAML and create VibraphoneConfig
-    # For now, just indicate config file exists
-    _config = VibraphoneConfig(project_root=Path.cwd())
-    return _config
-
-
-def clear_config_cache() -> None:
-    """Clear the cached config. Useful for testing."""
-    global _config
-    _config = None
+    @field_validator("worktrees_path", mode="before")
+    @classmethod
+    def expand_tilde(cls, v: Any) -> Path:
+        """Expand ~ in worktrees_path."""
+        if isinstance(v, str):
+            return Path(v).expanduser()
+        if isinstance(v, Path):
+            return v.expanduser()
+        return v
 
 
 def find_config_file() -> Path | None:
@@ -94,3 +120,101 @@ def find_config_file() -> Path | None:
             # Filesystem root
             return None
         current = parent
+
+
+def check_for_typos(unknown_fields: set[str]) -> list[str]:
+    """Check unknown fields for potential typos."""
+    warnings = []
+    for unknown in unknown_fields:
+        matches = get_close_matches(unknown, KNOWN_TOP_LEVEL_FIELDS, n=1, cutoff=TYPO_SUGGESTION_CUTOFF)
+        if matches:
+            warnings.append(f"Unknown field '{unknown}'. Did you mean '{matches[0]}'?")
+    return warnings
+
+
+def format_validation_error(error: ValidationError, config_path: Path) -> str:
+    """Format Pydantic validation error with helpful context."""
+    lines = [f"Config validation failed in {config_path}:\n"]
+
+    for err in error.errors():
+        field_path = ".".join(str(p) for p in err["loc"])
+        msg = err["msg"]
+        error_type = err["type"]
+
+        lines.append(f"  {field_path}: {msg}")
+
+        # Add contextual suggestions per CONTEXT.md
+        if error_type == "string_type":
+            lines.append("    Did you mean to quote the value?")
+        elif error_type == "int_parsing":
+            lines.append("    Expected an integer.")
+
+    return "\n".join(lines)
+
+
+def load_yaml_with_errors(config_path: Path) -> dict:
+    """Load YAML file with helpful error messages on failure."""
+    try:
+        content = config_path.read_text(encoding="utf-8")
+        result = yaml.safe_load(content)
+        return result if result is not None else {}
+    except yaml.YAMLError as e:
+        print(f"YAML syntax error in {config_path}:", file=sys.stderr)
+        print(f"  {e}", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError:
+        print(f"Cannot read {config_path}: permission denied", file=sys.stderr)
+        sys.exit(1)
+    except UnicodeDecodeError as e:
+        print(f"Cannot read {config_path}: encoding error - {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+# Module-level cache
+_config: VibraphoneConfig | None = None
+_config_path: Path | None = None
+
+
+def get_config() -> VibraphoneConfig:
+    """Load config lazily.
+
+    Returns:
+        VibraphoneConfig with defaults if no file found, or validated config.
+        Exits with error message if config is invalid.
+    """
+    global _config, _config_path
+
+    if _config is not None:
+        return _config
+
+    config_path = find_config_file()
+    if config_path is None:
+        # No config file - use all defaults (CFG-03)
+        _config = VibraphoneConfig()
+        return _config
+
+    _config_path = config_path
+
+    try:
+        raw_config = load_yaml_with_errors(config_path)
+        _config = VibraphoneConfig.model_validate(raw_config)
+
+        # Check for unknown fields (CFG-05 compatibility + typo detection)
+        unknown_fields = set(raw_config.keys()) - KNOWN_TOP_LEVEL_FIELDS
+        if unknown_fields:
+            warnings = check_for_typos(unknown_fields)
+            for warning in warnings:
+                print(f"Warning: {warning}", file=sys.stderr)
+
+        return _config
+
+    except ValidationError as e:
+        print(format_validation_error(e, config_path), file=sys.stderr)
+        sys.exit(1)
+
+
+def clear_config_cache() -> None:
+    """Clear the cached config. Useful for testing."""
+    global _config, _config_path
+    _config = None
+    _config_path = None
