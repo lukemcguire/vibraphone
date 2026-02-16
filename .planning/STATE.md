@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Every code change goes through the quality gate (tests, lint, review) before it can be committed — enforced by tooling, not by prompting.
-**Current focus:** Phase 1 - Package Foundation
+**Current focus:** Phase 2 - Configuration & Core Utilities
 
 ## Current Position
 
-Phase: 1 of 8 (Package Foundation) - COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase 1 complete - Package foundation with tests verified
-Last activity: 2026-02-16 — Completed 01-03 test suite and verification
+Phase: 2 of 8 (Configuration & Core Utilities) - IN PROGRESS
+Plan: 1 of 4 in current phase
+Status: Completed 02-01 config discovery
+Last activity: 2026-02-16 — Completed 02-01 config discovery plan
 
-Progress: [█████████░░░] 100%
+Progress: [██░░░░░░░░░] 12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 2.7 min
-- Total execution time: 0.13 hours
+- Total plans completed: 4
+- Average duration: 2.8 min
+- Total execution time: 0.19 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-package-foundation | 3 | 3 | 2.7 min |
+| 02-configuration-core-utilities | 1 | 4 | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 2.7 min
+- Last 5 plans: 3.0 min
 - Trend: Starting
 
 *Updated after each plan completion*
@@ -54,6 +55,8 @@ Recent decisions affecting current work:
 - Entry point via uv pip install -e . (01-02) — Available at .venv/bin/vibraphone, not global PATH
 - Subprocess test pattern for entry point (01-03) — Verifies module runnable without blocking on stdin
 - Config cache clearing in test setup (01-03) — Ensures test isolation
+- Config discovery checks for vibraphone.yaml BEFORE .git boundary (02-01) — Ensures config at project root is found
+- Symlink following via Path.resolve() for config discovery (02-01) — Standard Python behavior
 
 ### Pending Todos
 
@@ -67,6 +70,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16 — Completed Phase 1 Package Foundation
-Stopped at: Phase 1 complete, ready for Phase 2
-Resume file: .planning/phases/02-core-tools/01-PLAN.md
+Last session: 2026-02-16 — Completed 02-01 config discovery
+Stopped at: 02-01 complete, ready for 02-02
+Resume file: .planning/phases/02-configuration-core-utilities/02-02-PLAN.md
