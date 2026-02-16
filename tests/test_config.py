@@ -120,6 +120,10 @@ class TestVibraphoneConfig:
 class TestConfigValidation:
     """Tests for config validation and error handling."""
 
+    def setup_method(self):
+        """Clear config cache before each test."""
+        clear_config_cache()
+
     def test_invalid_field_type_shows_helpful_error(self):
         """Verify string where int expected shows helpful suggestion."""
         from pydantic import ValidationError

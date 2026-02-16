@@ -67,7 +67,7 @@ class VibraphoneConfig(BaseModel):
 
     @field_validator("project", "worktree", "quality_gate", mode="before")
     @classmethod
-    def handle_none_sections(cls, v: Any) -> Any:
+    def handle_none_sections(cls, v: Any) -> Any:  # noqa: ANN401
         """Convert None to empty dict for optional sections."""
         if v is None:
             return {}
@@ -75,7 +75,7 @@ class VibraphoneConfig(BaseModel):
 
     @field_validator("worktrees_path", mode="before")
     @classmethod
-    def expand_tilde(cls, v: Any) -> Path:
+    def expand_tilde(cls, v: Any) -> Path:  # noqa: ANN401
         """Expand ~ in worktrees_path."""
         if isinstance(v, str):
             return Path(v).expanduser()
@@ -123,12 +123,18 @@ def find_config_file() -> Path | None:
 
 
 def check_for_typos(unknown_fields: set[str]) -> list[str]:
-    """Check unknown fields for potential typos."""
+    """Check unknown fields and generate warnings.
+
+    Generates warnings for all unknown fields, with typo suggestions
+    when a close match is found.
+    """
     warnings = []
     for unknown in unknown_fields:
         matches = get_close_matches(unknown, KNOWN_TOP_LEVEL_FIELDS, n=1, cutoff=TYPO_SUGGESTION_CUTOFF)
         if matches:
             warnings.append(f"Unknown field '{unknown}'. Did you mean '{matches[0]}'?")
+        else:
+            warnings.append(f"Unknown field '{unknown}'.")
     return warnings
 
 
@@ -157,7 +163,6 @@ def load_yaml_with_errors(config_path: Path) -> dict:
     try:
         content = config_path.read_text(encoding="utf-8")
         result = yaml.safe_load(content)
-        return result if result is not None else {}
     except yaml.YAMLError as e:
         print(f"YAML syntax error in {config_path}:", file=sys.stderr)
         print(f"  {e}", file=sys.stderr)
@@ -168,6 +173,8 @@ def load_yaml_with_errors(config_path: Path) -> dict:
     except UnicodeDecodeError as e:
         print(f"Cannot read {config_path}: encoding error - {e}", file=sys.stderr)
         sys.exit(1)
+    else:
+        return result if result is not None else {}
 
 
 # Module-level cache
@@ -198,7 +205,10 @@ def get_config() -> VibraphoneConfig:
     try:
         raw_config = load_yaml_with_errors(config_path)
         _config = VibraphoneConfig.model_validate(raw_config)
-
+    except ValidationError as e:
+        print(format_validation_error(e, config_path), file=sys.stderr)
+        sys.exit(1)
+    else:
         # Check for unknown fields (CFG-05 compatibility + typo detection)
         unknown_fields = set(raw_config.keys()) - KNOWN_TOP_LEVEL_FIELDS
         if unknown_fields:
@@ -207,10 +217,6 @@ def get_config() -> VibraphoneConfig:
                 print(f"Warning: {warning}", file=sys.stderr)
 
         return _config
-
-    except ValidationError as e:
-        print(format_validation_error(e, config_path), file=sys.stderr)
-        sys.exit(1)
 
 
 def clear_config_cache() -> None:
