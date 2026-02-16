@@ -50,10 +50,12 @@ Plans:
   3. Server runs with missing vibraphone.yaml using all default values
   4. Worktree base path reads from vibraphone.yaml worktrees_path field (defaults to ~/.vibraphone/worktrees/)
   5. Existing vibraphone.yaml from template projects loads without modification
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD
+- [ ] 02-01-PLAN.md — Implement config discovery with directory walking and boundaries
+- [ ] 02-02-PLAN.md — Implement Pydantic config model with validation and error messages
+- [ ] 02-03-PLAN.md — Integration tests and Phase 2 success criteria verification
 
 ### Phase 3: Task Management Tools
 **Goal**: Agent can manage tasks via beads_rust
