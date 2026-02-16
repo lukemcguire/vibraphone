@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 DEFAULT_WORKTREES_PATH = Path.home() / ".vibraphone" / "worktrees"
 
 # Known top-level fields for typo detection
-KNOWN_TOP_LEVEL_FIELDS = {"project", "components", "quality_gate", "worktree", "review", "beads", "stitch"}
+KNOWN_TOP_LEVEL_FIELDS = {"project", "components", "quality_gate", "worktree", "worktrees_path", "review", "beads", "stitch"}
 
 # difflib cutoff for typo suggestions
 TYPO_SUGGESTION_CUTOFF = 0.6

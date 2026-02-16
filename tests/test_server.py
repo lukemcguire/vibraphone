@@ -3,8 +3,6 @@
 import subprocess
 import sys
 
-import pytest
-
 
 def test_version_importable():
     """Verify package version is accessible."""
