@@ -413,3 +413,145 @@ quality_gate:
         clear_config_cache()
         abs_config = get_config()
         assert abs_config.worktrees_path == Path("/absolute/path/worktrees")
+
+
+class TestPhase2SuccessCriteria:
+    """Verification of Phase 2 success criteria from ROADMAP.md.
+
+    Each test verifies one CFG requirement:
+    - CFG-01: Discovery from any subdirectory
+    - CFG-02: Clear validation errors with field name
+    - CFG-03: Defaults work when no config
+    - CFG-04: worktrees_path configurable with correct default
+    - CFG-05: Template format compatible
+    """
+
+    def setup_method(self):
+        """Clear config cache before each test."""
+        clear_config_cache()
+
+    def test_cfg01_discovery_from_subdirectory(self, tmp_path: Path, monkeypatch):
+        """CFG-01: Server discovers vibraphone.yaml by walking up from CWD."""
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+project:
+  name: cfg01-test
+"""
+        )
+
+        deep_subdir = tmp_path / "src" / "vibraphone" / "tools"
+        deep_subdir.mkdir(parents=True)
+
+        monkeypatch.chdir(deep_subdir)
+        config = get_config()
+
+        assert config is not None
+        assert config.project.name == "cfg01-test"
+
+    def test_cfg02_clear_error_on_invalid_field(self, tmp_path: Path, monkeypatch, capfd):
+        """CFG-02: Invalid vibraphone.yaml shows clear error with field name."""
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+quality_gate:
+  max_test_attempts: "invalid-string-instead-of-int"
+"""
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(SystemExit) as exc_info:
+            get_config()
+
+        assert exc_info.value.code == 1
+        captured = capfd.readouterr()
+        assert "max_test_attempts" in captured.err
+
+    def test_cfg03_defaults_when_missing(self, tmp_path: Path, monkeypatch, capfd):
+        """CFG-03: Server runs with missing vibraphone.yaml using defaults."""
+        monkeypatch.chdir(tmp_path)
+
+        config = get_config()
+
+        assert config is not None
+        assert config.project.name == "unnamed-project"
+        assert config.project.version == "0.1.0"
+        assert config.worktree.base_branch == "main"
+        assert config.worktree.prefix == "feat/"
+        assert config.worktree.auto_cleanup is False
+        assert config.quality_gate.require_tests is True
+        assert config.quality_gate.require_lint is True
+        assert config.quality_gate.require_review is True
+        assert config.quality_gate.review_severity_threshold == "error"
+        assert config.quality_gate.max_test_attempts == 10
+        assert config.quality_gate.max_review_attempts == 5
+        assert config.worktrees_path == Path.home() / ".vibraphone" / "worktrees"
+
+        captured = capfd.readouterr()
+        assert captured.err == ""
+
+    def test_cfg04_worktrees_path_configurable(self, tmp_path: Path, monkeypatch):
+        """CFG-04: Worktrees path configurable, defaults to ~/.vibraphone/worktrees/."""
+        monkeypatch.chdir(tmp_path)
+
+        clear_config_cache()
+        default_config = get_config()
+        assert default_config.worktrees_path == Path.home() / ".vibraphone" / "worktrees"
+
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+worktrees_path: /custom/worktrees/location
+"""
+        )
+        clear_config_cache()
+        custom_config = get_config()
+        assert custom_config.worktrees_path == Path("/custom/worktrees/location")
+
+        config_file.write_text(
+            """
+worktrees_path: ~/my-worktrees
+"""
+        )
+        clear_config_cache()
+        tilde_config = get_config()
+        assert tilde_config.worktrees_path == Path.home() / "my-worktrees"
+
+    def test_cfg05_template_compatibility(self, tmp_path: Path, monkeypatch):
+        """CFG-05: Existing template vibraphone.yaml loads without modification."""
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+project:
+  name: existing-template-project
+  version: 3.2.1
+
+worktree:
+  base_branch: main
+  prefix: feature/
+  auto_cleanup: false
+
+quality_gate:
+  require_tests: true
+  require_lint: true
+  require_review: true
+  review_severity_threshold: error
+  max_test_attempts: 10
+  max_review_attempts: 5
+"""
+        )
+        monkeypatch.chdir(tmp_path)
+
+        config = get_config()
+
+        assert config.project.name == "existing-template-project"
+        assert config.project.version == "3.2.1"
+        assert config.worktree.base_branch == "main"
+        assert config.worktree.prefix == "feature/"
+        assert config.worktree.auto_cleanup is False
+        assert config.quality_gate.require_tests is True
+        assert config.quality_gate.require_lint is True
+        assert config.quality_gate.require_review is True
+        assert config.quality_gate.review_severity_threshold == "error"
+        assert config.quality_gate.max_test_attempts == 10
+        assert config.quality_gate.max_review_attempts == 5
