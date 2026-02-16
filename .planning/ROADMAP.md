@@ -67,10 +67,14 @@ Plans:
   3. Agent can call complete_task and immediately see newly unblocked dependent tasks
   4. Agent can call abandon_task and task status resets to ready
   5. Agent can call get_task_context and receive focused context bundle for a task
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD
+- [ ] 03-01-PLAN.md — Create async CLI runner and structured error model infrastructure
+- [ ] 03-02-PLAN.md — Implement list_tasks, next_ready, health_check query tools
+- [ ] 03-03-PLAN.md — Implement complete_task, abandon_task, add_task mutation tools
+- [ ] 03-04-PLAN.md — Implement get_task_context and register tools in server
+- [ ] 03-05-PLAN.md — Create unit tests and Phase 3 success criteria verification
 
 ### Phase 4: Worktree & Session Tools
 **Goal**: Agent works in isolated branches with session recovery
@@ -148,13 +152,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Foundation | 0/3 | Not started | - |
-| 2. Configuration & Core Utilities | 0/TBD | Not started | - |
-| 3. Task Management Tools | 0/TBD | Not started | - |
+| 2. Configuration & Core Utilities | 0/3 | Not started | - |
+| 3. Task Management Tools | 0/5 | Not started | - |
 | 4. Worktree & Session Tools | 0/TBD | Not started | - |
 | 5. Quality Gate Tools | 0/TBD | Not started | - |
 | 6. Bridge & Stack Tools | 0/TBD | Not started | - |
