@@ -1,6 +1,5 @@
 """Tests for vibraphone configuration loading."""
 
-import os
 from pathlib import Path
 
 import pytest
@@ -118,7 +117,7 @@ class TestFindConfigFile:
         # Cleanup
         parent_config.unlink()
 
-    def test_stops_at_home_boundary(self, tmp_path: Path, monkeypatch):
+    def test_stops_at_home_boundary(self, monkeypatch):
         """Verify search stops at $HOME directory when no .git found."""
         # This test verifies that if we somehow get to $HOME without finding
         # .git, we stop there. Since we can't easily monkeypatch Path.home(),
