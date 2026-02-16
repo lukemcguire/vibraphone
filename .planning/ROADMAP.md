@@ -33,10 +33,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Running `vibraphone` command starts FastMCP server on stdio transport
   4. Server starts without vibraphone.yaml and does not crash or emit errors
   5. Source code is organized in src/vibraphone/ layout with proper package structure
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD
+- [ ] 01-PLAN.md — Create src/vibraphone package structure and configure pyproject.toml
+- [ ] 02-PLAN.md — Create FastMCP server entry point with lazy config loading stub
+- [ ] 03-PLAN.md — Create tests and verify both installation methods
 
 ### Phase 2: Configuration & Core Utilities
 **Goal**: Config loading and shared utilities work
@@ -148,7 +150,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Package Foundation | 0/TBD | Not started | - |
+| 1. Package Foundation | 0/3 | Not started | - |
 | 2. Configuration & Core Utilities | 0/TBD | Not started | - |
 | 3. Task Management Tools | 0/TBD | Not started | - |
 | 4. Worktree & Session Tools | 0/TBD | Not started | - |
