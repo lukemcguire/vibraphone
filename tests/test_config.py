@@ -292,3 +292,124 @@ class TestFindConfigFile:
 
         assert result1 == result2
         assert result1 == config_file
+
+
+class TestConfigIntegration:
+    """Integration tests for complete config flow: discovery -> loading -> validation."""
+
+    def setup_method(self):
+        """Clear config cache before each test."""
+        clear_config_cache()
+
+    def test_discovery_to_loading_pipeline(self, tmp_path: Path, monkeypatch):
+        """Verify get_config() from subdirectory loads config from parent."""
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+project:
+  name: integration-test
+  version: 2.0.0
+quality_gate:
+  max_test_attempts: 3
+"""
+        )
+
+        subdir = tmp_path / "deep" / "nested" / "dir"
+        subdir.mkdir(parents=True)
+
+        monkeypatch.chdir(subdir)
+        config = get_config()
+
+        assert config is not None
+        assert config.project.name == "integration-test"
+        assert config.project.version == "2.0.0"
+        assert config.quality_gate.max_test_attempts == 3
+
+    def test_server_starts_without_config(self, tmp_path: Path, monkeypatch, capfd):
+        """Verify get_config() returns defaults when no vibraphone.yaml exists."""
+        monkeypatch.chdir(tmp_path)
+
+        config = get_config()
+
+        assert config is not None
+        assert config.project.name == "unnamed-project"
+        assert config.project.version == "0.1.0"
+        assert config.worktree.base_branch == "main"
+        assert config.quality_gate.require_tests is True
+        assert config.worktrees_path == Path.home() / ".vibraphone" / "worktrees"
+
+        captured = capfd.readouterr()
+        assert captured.err == ""
+
+    def test_server_fails_on_invalid_config(self, tmp_path: Path, monkeypatch, capfd):
+        """Verify invalid config causes exit with clear error message."""
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+quality_gate:
+  max_test_attempts: not-a-number
+"""
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(SystemExit) as exc_info:
+            get_config()
+
+        assert exc_info.value.code == 1
+        captured = capfd.readouterr()
+        assert "max_test_attempts" in captured.err
+
+    def test_template_format_compatibility(self, tmp_path: Path, monkeypatch):
+        """Verify vibraphone.yaml matching template format loads correctly."""
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text(
+            """
+project:
+  name: template-project
+  version: 1.5.0
+
+worktree:
+  base_branch: develop
+  prefix: feature/
+  auto_cleanup: true
+
+quality_gate:
+  require_tests: false
+  require_lint: false
+  require_review: false
+  review_severity_threshold: warning
+  max_test_attempts: 5
+  max_review_attempts: 3
+"""
+        )
+        monkeypatch.chdir(tmp_path)
+
+        config = get_config()
+
+        assert config.project.name == "template-project"
+        assert config.project.version == "1.5.0"
+        assert config.worktree.base_branch == "develop"
+        assert config.worktree.prefix == "feature/"
+        assert config.worktree.auto_cleanup is True
+        assert config.quality_gate.require_tests is False
+        assert config.quality_gate.max_test_attempts == 5
+        assert config.worktrees_path == Path.home() / ".vibraphone" / "worktrees"
+
+    def test_worktrees_path_custom_and_default(self, tmp_path: Path, monkeypatch):
+        """Verify worktrees_path handles default, ~ expansion, and absolute paths."""
+        monkeypatch.chdir(tmp_path)
+
+        clear_config_cache()
+        default_config = get_config()
+        assert default_config.worktrees_path == Path.home() / ".vibraphone" / "worktrees"
+
+        config_file = tmp_path / "vibraphone.yaml"
+        config_file.write_text("worktrees_path: ~/custom/worktrees\n")
+        clear_config_cache()
+        tilde_config = get_config()
+        assert tilde_config.worktrees_path == Path.home() / "custom" / "worktrees"
+
+        config_file.write_text("worktrees_path: /absolute/path/worktrees\n")
+        clear_config_cache()
+        abs_config = get_config()
+        assert abs_config.worktrees_path == Path("/absolute/path/worktrees")
