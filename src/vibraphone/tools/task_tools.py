@@ -66,3 +66,26 @@ async def list_tasks(status: str | None = None, plan: str | None = None) -> dict
         "dependency_graph": result.get("dependency_graph", {}),
         "total": len(tasks),
     }
+
+
+@mcp.tool
+async def next_ready() -> dict:
+    """Get the next unblocked task using critical path analysis.
+
+    Uses PageRank/critical path algorithm from beads_viewer to identify
+    the task that is most blocking or on the critical path.
+
+    Returns:
+        Dict with recommended task and claim command, or empty if none ready.
+        Includes 'reason' explaining why this task was selected.
+    """
+    result = await run_cli("bv", "--robot-next", cwd=get_project_root())
+
+    if not result.get("task"):
+        return {"task": None, "message": "No ready tasks available"}
+
+    return {
+        "task": result["task"],
+        "claim_command": result.get("claim_command"),
+        "reason": result.get("reason", "critical path prioritization"),
+    }
