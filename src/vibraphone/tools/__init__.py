@@ -1,5 +1,24 @@
-"""Tools package for vibraphone MCP server."""
+"""Tools package for vibraphone MCP server.
 
-from vibraphone.tools.task_tools import TaskError
+This package contains MCP tool implementations.
+"""
 
-__all__ = ["TaskError"]
+from vibraphone.tools.task_tools import (
+    TaskError,
+    abandon_task,
+    complete_task,
+    get_task_context,
+    health_check,
+    list_tasks,
+    next_ready,
+)
+
+__all__ = [
+    "TaskError",
+    "abandon_task",
+    "complete_task",
+    "get_task_context",
+    "health_check",
+    "list_tasks",
+    "next_ready",
+]
