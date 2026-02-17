@@ -120,10 +120,13 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Agent can call import_gsd_plan and GSD plan converts to beads tasks with dependencies
   2. Agent can call configure_stack and Justfile recipes regenerate with new stack config
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD
+- [ ] 06-01-PLAN.md — Create plan_parser utilities and extend config with STACK_DEFAULTS
+- [ ] 06-02-PLAN.md — Implement import_gsd_plan MCP tool with explicit dependency wiring
+- [ ] 06-03-PLAN.md — Implement configure_stack MCP tool with section-based Justfile update
+- [ ] 06-04-PLAN.md — Create unit tests and Phase 6 success criteria verification
 
 ### Phase 7: Scaffolding & Templates
 **Goal**: Agent scaffolds vibraphone into any project
@@ -168,6 +171,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Task Management Tools | 0/5 | Not started | - |
 | 4. Worktree & Session Tools | 0/4 | Complete    | 2026-02-17 |
 | 5. Quality Gate Tools | 0/5 | Complete    | 2026-02-17 |
-| 6. Bridge & Stack Tools | 0/TBD | Not started | - |
+| 6. Bridge & Stack Tools | 0/4 | Not started | - |
 | 7. Scaffolding & Templates | 0/TBD | Not started | - |
 | 8. Testing & Documentation | 0/TBD | Not started | - |
