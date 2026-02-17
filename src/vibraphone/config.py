@@ -22,6 +22,7 @@ KNOWN_TOP_LEVEL_FIELDS = {
     "quality_gate",
     "worktree",
     "worktrees_path",
+    "circuit_breakers",
     "review",
     "beads",
     "stitch",
@@ -46,6 +47,29 @@ class WorktreeConfig(BaseModel):
     auto_cleanup: bool = False
 
 
+class CircuitBreakerToolConfig(BaseModel):
+    """Circuit breaker settings for a single tool."""
+
+    max_attempts: int | None = None  # None = no circuit breaker
+
+
+class CircuitBreakersConfig(BaseModel):
+    """Circuit breaker settings per tool."""
+
+    tests: CircuitBreakerToolConfig = Field(default_factory=lambda: CircuitBreakerToolConfig(max_attempts=5))
+    lint: CircuitBreakerToolConfig = Field(default_factory=lambda: CircuitBreakerToolConfig(max_attempts=None))
+    review: CircuitBreakerToolConfig = Field(default_factory=lambda: CircuitBreakerToolConfig(max_attempts=3))
+
+
+class QualityGateCommandsConfig(BaseModel):
+    """Command overrides for quality gate tools."""
+
+    test: str = "just test"
+    lint: str = "just lint"
+    format: str = "just format"
+    check: str = "just check"
+
+
 class QualityGateConfig(BaseModel):
     """Quality gate settings."""
 
@@ -55,6 +79,13 @@ class QualityGateConfig(BaseModel):
     review_severity_threshold: str = "error"
     max_test_attempts: int = Field(default=10, ge=1)
     max_review_attempts: int = Field(default=5, ge=1)
+    commands: QualityGateCommandsConfig = Field(default_factory=QualityGateCommandsConfig)
+
+
+class ReviewConfig(BaseModel):
+    """LLM code review settings."""
+
+    model: str = "anthropic/claude-3-sonnet"
 
 
 class VibraphoneConfig(BaseModel):
@@ -70,11 +101,13 @@ class VibraphoneConfig(BaseModel):
     project: ProjectConfig = Field(default_factory=ProjectConfig)
     worktree: WorktreeConfig = Field(default_factory=WorktreeConfig)
     quality_gate: QualityGateConfig = Field(default_factory=QualityGateConfig)
+    circuit_breakers: CircuitBreakersConfig = Field(default_factory=CircuitBreakersConfig)
+    review: ReviewConfig = Field(default_factory=ReviewConfig)
 
     # The key configurable path (CFG-04)
     worktrees_path: Path = Field(default=DEFAULT_WORKTREES_PATH)
 
-    @field_validator("project", "worktree", "quality_gate", mode="before")
+    @field_validator("project", "worktree", "quality_gate", "circuit_breakers", "review", mode="before")
     @classmethod
     def handle_none_sections(cls, v: Any) -> Any:  # noqa: ANN401
         """Convert None to empty dict for optional sections."""
