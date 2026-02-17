@@ -169,16 +169,21 @@ Plans:
 **Goal**: Package tested and documented for users
 **Depends on**: Phase 8
 **Requirements**: TEST-01, TEST-02, TEST-03, DOC-01, DOC-02, DOC-03
+**Gap Closure**: Fixes test_phase5_success.py regression from Phase 8
 **Success Criteria** (what must be TRUE):
   1. Unit tests run with mocked subprocesses and all pass
   2. Integration tests run with real git/br and key workflows pass
   3. Installed wheel contains all template files verified by test
   4. README explains installation and quickstart clearly
   5. Tool API reference documents all MCP tools with parameters and return values
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD
+- [ ] 09-01-PLAN.md — Fix test_phase5_success.py mock patches for get_execution_context
+- [ ] 09-02-PLAN.md — Complete unit test coverage with mocked subprocesses
+- [ ] 09-03-PLAN.md — Create integration tests and wheel template verification
+- [ ] 09-04-PLAN.md — Write README with installation and quickstart guide
+- [ ] 09-05-PLAN.md — Write tool API reference and architecture documentation
 
 ## Progress
 
@@ -195,4 +200,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 6. Bridge & Stack Tools | 0/4 | Not started | - |
 | 7. Scaffolding & Templates | 0/5 | Not started | - |
 | 8. Quality Gate Worktree Integration | 0/1 | Complete    | 2026-02-17 |
-| 9. Testing & Documentation | 0/TBD | Not started | - |
+| 9. Testing & Documentation | 0/5 | Not started | - |
