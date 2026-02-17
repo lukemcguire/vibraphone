@@ -110,3 +110,79 @@ async def create_worktree(
         )
 
     return worktree_path
+
+
+async def rebase_onto_main(worktree_path: Path, branch_name: str) -> dict:
+    """Rebase task branch onto main with conflict detection and abort.
+
+    Fetches latest main, then rebases current branch onto origin/main.
+    On conflict, aborts rebase and returns detailed conflict information.
+
+    Args:
+        worktree_path: Path to task worktree
+        branch_name: Branch being rebased
+
+    Returns:
+        Dict with success status and branch name
+
+    Raises:
+        RebaseError: If rebase fails with conflicts (includes conflicted_files)
+    """
+    # Fetch latest main (ignore returncode - might be offline)
+    fetch = await asyncio.create_subprocess_exec(
+        "git",
+        "fetch",
+        "origin",
+        "main",
+        cwd=worktree_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    await fetch.communicate()
+
+    # Attempt rebase onto origin/main
+    process = await asyncio.create_subprocess_exec(
+        "git",
+        "rebase",
+        "origin/main",
+        cwd=worktree_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await process.communicate()
+
+    if process.returncode == 0:
+        return {"success": True, "branch": branch_name}
+
+    # On conflict: get conflicted files, abort rebase, raise error
+    diff_process = await asyncio.create_subprocess_exec(
+        "git",
+        "diff",
+        "--name-only",
+        "--diff-filter=U",
+        cwd=worktree_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await diff_process.communicate()
+    conflicted_files = [
+        f for f in stdout.decode().strip().split("\n") if f
+    ]
+
+    # CRITICAL: Abort rebase to restore clean state
+    abort = await asyncio.create_subprocess_exec(
+        "git",
+        "rebase",
+        "--abort",
+        cwd=worktree_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    await abort.communicate()
+
+    raise RebaseError(
+        error_type="RebaseConflict",
+        message=f"Rebase conflicts detected in {len(conflicted_files)} file(s)",
+        suggested_action="Resolve conflicts manually, then retry merge_task",
+        conflicted_files=conflicted_files,
+    )
