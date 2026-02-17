@@ -11,7 +11,9 @@ mcp = FastMCP("vibraphone")
 
 # Import tools to register them with the mcp instance
 # The tools use @mcp.tool decorator which registers on import
+import vibraphone.tools.bridge_tools  # noqa: E402
 import vibraphone.tools.quality_gate_tools  # noqa: E402
+import vibraphone.tools.stack_tools  # noqa: E402
 import vibraphone.tools.task_tools  # noqa: E402
 import vibraphone.tools.worktree_tools  # noqa: E402, F401
 
