@@ -89,3 +89,29 @@ async def next_ready() -> dict:
         "claim_command": result.get("claim_command"),
         "reason": result.get("reason", "critical path prioritization"),
     }
+
+
+@mcp.tool
+async def health_check() -> dict:
+    """Check the health of the beads state.
+
+    Returns graph metrics including PageRank, betweenness, critical path,
+    cycle detection, and project health indicators.
+
+    Returns:
+        Dict with status, data_hash, as_of timestamp, and metrics dict.
+    """
+    result = await run_cli("bv", "--robot-insights", cwd=get_project_root())
+
+    return {
+        "status": result.get("status"),  # computed/approx/timeout/skipped
+        "data_hash": result.get("data_hash"),
+        "as_of": result.get("as_of"),
+        "metrics": {
+            "pagerank_top": result.get("pagerank", {}).get("top", []),
+            "betweenness_top": result.get("betweenness", {}).get("top", []),
+            "critical_path": result.get("critical_path", []),
+            "cycles": result.get("cycles", []),
+            "project_health": result.get("project_health", {}),
+        },
+    }
