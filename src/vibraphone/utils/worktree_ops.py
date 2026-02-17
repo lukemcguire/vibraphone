@@ -10,19 +10,39 @@ from pathlib import Path
 from pydantic import BaseModel
 
 
-class WorktreeError(BaseModel):
+class WorktreeError(Exception):
     """Structured error response for worktree operations.
 
     Provides consistent error format for worktree tools with
-    actionable guidance for users. Follows TaskError pattern from task_tools.py.
+    actionable guidance for users. Follows TaskError pattern from task_tools.py
+    but extends Exception so it can be raised and caught.
     """
 
     error_type: str  # e.g., "BranchAlreadyExists", "UncommittedChanges"
     message: str  # Human-readable error message
     suggested_action: str  # What to do next
 
+    def __init__(
+        self,
+        error_type: str,
+        message: str,
+        suggested_action: str,
+    ) -> None:
+        self.error_type = error_type
+        self.message = message
+        self.suggested_action = suggested_action
+        super().__init__(message)
 
-class RebaseError(BaseModel):
+    def model_dump(self) -> dict:
+        """Serialize error to dict for MCP response."""
+        return {
+            "error_type": self.error_type,
+            "message": self.message,
+            "suggested_action": self.suggested_action,
+        }
+
+
+class RebaseError(Exception):
     """Structured error response for rebase conflicts.
 
     Extends WorktreeError pattern with conflict-specific details
@@ -33,6 +53,28 @@ class RebaseError(BaseModel):
     message: str  # Includes conflict count
     suggested_action: str  # How to resolve
     conflicted_files: list[str]  # List of files with conflicts
+
+    def __init__(
+        self,
+        message: str,
+        suggested_action: str,
+        conflicted_files: list[str],
+        error_type: str = "RebaseConflict",
+    ) -> None:
+        self.error_type = error_type
+        self.message = message
+        self.suggested_action = suggested_action
+        self.conflicted_files = conflicted_files
+        super().__init__(message)
+
+    def model_dump(self) -> dict:
+        """Serialize error to dict for MCP response."""
+        return {
+            "error_type": self.error_type,
+            "message": self.message,
+            "suggested_action": self.suggested_action,
+            "conflicted_files": self.conflicted_files,
+        }
 
 
 async def create_worktree(
@@ -210,7 +252,8 @@ async def check_uncommitted_changes(worktree_path: Path) -> list[str]:
     )
     stdout, _ = await process.communicate()
 
-    lines = stdout.decode().strip().split("\n")
+    # Split by newline, strip trailing whitespace only, filter empty lines
+    lines = stdout.decode().rstrip("\n").split("\n")
     # Each line is "XY filename" - extract filename starting at position 3
     return [line[3:] for line in lines if line]
 
