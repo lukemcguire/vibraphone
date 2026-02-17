@@ -115,3 +115,62 @@ async def health_check() -> dict:
             "project_health": result.get("project_health", {}),
         },
     }
+
+
+@mcp.tool
+async def complete_task(task_id: str, notes: str | None = None) -> dict:
+    """Mark a task as completed.
+
+    Args:
+        task_id: The task ID (e.g., bd-abc123)
+        notes: Optional completion notes
+
+    Returns:
+        Updated task state and newly unblocked tasks.
+        Returns TaskError if task is blocked.
+    """
+    # Verify task exists and is not blocked
+    task = await run_cli("br", "show", task_id, "--json", cwd=get_project_root())
+
+    if task.get("status") == "blocked":
+        return TaskError(
+            error_type="CannotCompleteBlockedTask",
+            message=f"Task {task_id} is blocked by incomplete dependencies",
+            suggested_action="Complete blocking tasks first or use abandon_task to reset",
+        ).model_dump()
+
+    # Complete the task
+    args = ["close", task_id]
+    if notes:
+        args.extend(["--notes", notes])
+
+    result = await run_cli("br", *args, cwd=get_project_root())
+
+    return {
+        "task": result.get("issue"),
+        "unblocked": result.get("unblocked", []),
+        "completed_at": result.get("closed_at"),
+    }
+
+
+@mcp.tool
+async def abandon_task(task_id: str, reason: str) -> dict:
+    """Abandon a task and reset its status to ready.
+
+    Args:
+        task_id: The task ID (e.g., bd-abc123)
+        reason: Required reason for audit trail
+
+    Returns:
+        Updated task state with reason recorded.
+    """
+    # Reset status and capture reason
+    args = ["update", task_id, "--status", "ready", "--notes", f"Abandoned: {reason}"]
+
+    result = await run_cli("br", *args, cwd=get_project_root())
+
+    return {
+        "task": result.get("issue"),
+        "abandoned_at": result.get("updated_at"),
+        "reason": reason,
+    }
