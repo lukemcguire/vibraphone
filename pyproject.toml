@@ -9,6 +9,7 @@ authors = [
     {name = "Luke McGuire", email = "luke@example.com"}
 ]
 dependencies = [
+    "defusedxml>=0.7.1",
     "fastmcp>=2.0",
     "instructor>=1.0",
     "pydantic>=2.0",
