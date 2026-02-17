@@ -32,7 +32,6 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **TASK-04**: Agent can abandon task and reset its status (abandon_task)
 - [ ] **TASK-05**: Agent can run health check on beads state (health_check)
 - [ ] **TASK-06**: Agent can load focused context bundle for a task (get_task_context)
-- [ ] **TASK-07**: Agent can create task with dependencies (add_task)
 
 ### Worktree Tools
 
@@ -117,6 +116,10 @@ Deferred to future release. Tracked but not in current roadmap.
 
 - **REL-01**: Session recovery bug fixed (known issue from template)
 
+### Task Management
+
+- **TASK-07**: Agent can create task with dependencies (add_task) — deferred to prevent task sprawl; tasks should come from plan import or user manipulation
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -151,7 +154,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TASK-04 | Phase 3 | Pending |
 | TASK-05 | Phase 3 | Pending |
 | TASK-06 | Phase 3 | Pending |
-| TASK-07 | Phase 3 | Pending |
+| TASK-07 | Deferred | v2 |
 | WKTREE-01 | Phase 4 | Pending |
 | WKTREE-02 | Phase 4 | Pending |
 | WKTREE-03 | Phase 4 | Pending |
@@ -187,8 +190,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOC-03 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 44 total
-- Mapped to phases: 44
+- v1 requirements: 43 total
+- Mapped to phases: 43
 - Unmapped: 0
 
 ---

@@ -60,7 +60,7 @@ Plans:
 ### Phase 3: Task Management Tools
 **Goal**: Agent can manage tasks via beads_rust
 **Depends on**: Phase 2
-**Requirements**: TASK-01, TASK-02, TASK-03, TASK-04, TASK-05, TASK-06, TASK-07
+**Requirements**: TASK-01, TASK-02, TASK-03, TASK-04, TASK-05, TASK-06
 **Success Criteria** (what must be TRUE):
   1. Agent can call list_tasks and see all tasks with status filtering working
   2. Agent can call next_ready and receive the next unblocked task
@@ -72,7 +72,7 @@ Plans:
 Plans:
 - [ ] 03-01-PLAN.md — Create async CLI runner and structured error model infrastructure
 - [ ] 03-02-PLAN.md — Implement list_tasks, next_ready, health_check query tools
-- [ ] 03-03-PLAN.md — Implement complete_task, abandon_task, add_task mutation tools
+- [ ] 03-03-PLAN.md — Implement complete_task, abandon_task mutation tools
 - [ ] 03-04-PLAN.md — Implement get_task_context and register tools in server
 - [ ] 03-05-PLAN.md — Create unit tests and Phase 3 success criteria verification
 
