@@ -242,3 +242,37 @@ async def check_branch_merged(branch_name: str, project_root: Path) -> bool:
     stdout, _ = await process.communicate()
 
     return bool(stdout.decode().strip())
+
+
+async def remove_worktree(worktree_path: Path, project_root: Path) -> None:
+    """Remove git worktree.
+
+    Removes the worktree directory from the repository. This function
+    should be called after safety checks pass in cleanup_task.
+
+    Note: Branch deletion is separate (done in cleanup_task MCP tool).
+
+    Args:
+        worktree_path: Path to the worktree to remove
+        project_root: Main repository root
+
+    Raises:
+        WorktreeError: If worktree removal fails
+    """
+    process = await asyncio.create_subprocess_exec(
+        "git",
+        "worktree",
+        "remove",
+        str(worktree_path),
+        cwd=project_root,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        raise WorktreeError(
+            error_type="WorktreeRemovalFailed",
+            message=f"Failed to remove worktree: {stderr.decode().strip()}",
+            suggested_action="Check if worktree directory is in use",
+        )
