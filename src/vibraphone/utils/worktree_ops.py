@@ -7,8 +7,6 @@ creation, rebase, cleanup, and safety checks with structured error handling.
 import asyncio
 from pathlib import Path
 
-from pydantic import BaseModel
-
 
 class WorktreeError(Exception):
     """Structured error response for worktree operations.

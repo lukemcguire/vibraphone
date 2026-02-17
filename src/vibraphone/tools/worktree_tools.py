@@ -6,14 +6,12 @@ including start_task, merge_task, cleanup_task, and recover_session.
 
 import asyncio
 from datetime import datetime
-from pathlib import Path
 
 from vibraphone.config import get_config, get_project_root
 from vibraphone.server import mcp
 from vibraphone.utils.errors import TaskError
 from vibraphone.utils.session import SessionManager, SessionState
 from vibraphone.utils.worktree_ops import (
-    WorktreeError,
     check_branch_merged,
     check_uncommitted_changes,
     create_worktree,

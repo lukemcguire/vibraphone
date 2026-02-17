@@ -7,8 +7,8 @@ structured output from LLM code reviews.
 import os
 from typing import Literal
 
-from pydantic import BaseModel
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
@@ -59,7 +59,7 @@ class CodeReviewer:
         """
         api_key = os.environ.get("REVIEWER_API_KEY")
         if not api_key:
-            raise MissingAPIKeyError()
+            raise MissingAPIKeyError
 
         self.model = model
         self._client = None

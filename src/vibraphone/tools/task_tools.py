@@ -6,14 +6,12 @@ with br/bv CLIs. Tools follow the error handling pattern from CONTEXT.md.
 
 import re
 import subprocess
-from pathlib import Path
 
+# Re-export get_project_root from config for backward compatibility
+from vibraphone.config import get_project_root
 from vibraphone.server import mcp
 from vibraphone.utils.cli_runner import CliError, run_cli
 from vibraphone.utils.errors import TaskError
-
-# Re-export get_project_root from config for backward compatibility
-from vibraphone.config import get_project_root  # noqa: F401
 
 
 @mcp.tool
