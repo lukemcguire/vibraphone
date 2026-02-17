@@ -1,0 +1,48 @@
+site_name: Vibraphone
+site_description: MCP server for AI coding agents with quality gates
+repo_url: https://github.com/lukemcguire/vibraphone
+repo_name: lukemcguire/vibraphone
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Configuration: configuration.md
+  - Architecture: architecture.md
+  - Errors: errors.md
+  - Tools:
+      - Task Tools: tools/task-tools.md
+      - Quality Tools: tools/quality-tools.md
+      - Worktree Tools: tools/worktree-tools.md
+      - Scaffold Tools: tools/scaffold-tools.md
+      - Bridge Tools: tools/bridge-tools.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            merge_init_into_class: true
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
