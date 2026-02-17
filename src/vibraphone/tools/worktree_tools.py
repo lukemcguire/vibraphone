@@ -72,3 +72,48 @@ async def start_task(task_id: str) -> dict:
             "When done, call merge_task to integrate into main",
         ],
     }
+
+
+@mcp.tool
+async def merge_task(task_id: str) -> dict:
+    """Rebase task branch into main.
+
+    Args:
+        task_id: Task identifier
+
+    Returns:
+        Dict with success status and next_steps, or error with conflict details
+    """
+    project_root = get_project_root()
+    session = SessionManager(project_root)
+    state = session.load()
+
+    # Check for active session matching this task
+    if not state or state.task_id != task_id:
+        return TaskError(
+            error_type="NoActiveSession",
+            message=f"No active session for task {task_id}",
+            suggested_action="Run start_task first",
+        ).model_dump()
+
+    branch_name = state.branch_name
+    worktree_path = state.worktree_path
+
+    # Attempt rebase - let RebaseError propagate (includes conflict info)
+    try:
+        await rebase_onto_main(worktree_path, branch_name)
+    except Exception as e:
+        # RebaseError and WorktreeError both have model_dump()
+        if hasattr(e, "model_dump"):
+            return e.model_dump()
+        raise
+
+    # Session is NOT cleared after merge - cleanup_task handles that
+    return {
+        "success": True,
+        "branch": branch_name,
+        "next_steps": [
+            "Rebase successful",
+            "Run cleanup_task to remove worktree and delete branch",
+        ],
+    }
