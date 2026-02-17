@@ -19,7 +19,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Quality Gate Tools** - All quality gates enforce review-before-commit (completed 2026-02-17)
 - [ ] **Phase 6: Bridge & Stack Tools** - Agent integrates with GSD and configures stack
 - [ ] **Phase 7: Scaffolding & Templates** - Agent scaffolds vibraphone into any project
-- [ ] **Phase 8: Testing & Documentation** - Package tested and documented for users
+- [ ] **Phase 8: Quality Gate Worktree Integration** - Quality gates operate in active worktree (gap closure)
+- [ ] **Phase 9: Testing & Documentation** - Package tested and documented for users
 
 ## Phase Details
 
@@ -148,9 +149,25 @@ Plans:
 - [ ] 07-04-PLAN.md — Implement init_project MCP tool with auto-detection and conflict handling
 - [ ] 07-05-PLAN.md — Create unit tests and Phase 7 success criteria verification
 
-### Phase 8: Testing & Documentation
-**Goal**: Package tested and documented for users
+### Phase 8: Quality Gate Worktree Integration
+**Goal**: Quality gates operate in the active worktree when a session exists
 **Depends on**: Phase 7
+**Requirements**: QUAL-06 (worktree context)
+**Gap Closure**: Closes INT-001 (quality gates ignore worktree context), Flow 2 (task execution flow)
+**Success Criteria** (what must be TRUE):
+  1. Agent calls start_task and then run_tests runs tests IN the worktree
+  2. Agent calls request_code_review and it stages files from the worktree
+  3. Agent calls attempt_commit and it commits TO the worktree branch
+  4. Quality gates work correctly when no session exists (fallback to project root)
+  5. E2E task execution flow works from import to cleanup
+**Plans**: 1 plan
+
+Plans:
+- [ ] 08-01-PLAN.md — Integrate session awareness into quality gate tools
+
+### Phase 9: Testing & Documentation
+**Goal**: Package tested and documented for users
+**Depends on**: Phase 8
 **Requirements**: TEST-01, TEST-02, TEST-03, DOC-01, DOC-02, DOC-03
 **Success Criteria** (what must be TRUE):
   1. Unit tests run with mocked subprocesses and all pass
@@ -166,7 +183,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -177,4 +194,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. Quality Gate Tools | 0/5 | Complete    | 2026-02-17 |
 | 6. Bridge & Stack Tools | 0/4 | Not started | - |
 | 7. Scaffolding & Templates | 0/5 | Not started | - |
-| 8. Testing & Documentation | 0/TBD | Not started | - |
+| 8. Quality Gate Worktree Integration | 0/1 | Not started | - |
+| 9. Testing & Documentation | 0/TBD | Not started | - |

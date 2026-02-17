@@ -167,7 +167,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-03 | Phase 5 | Pending |
 | QUAL-04 | Phase 5 | Pending |
 | QUAL-05 | Phase 5 | Pending |
-| QUAL-06 | Phase 5 | Pending |
+| QUAL-06 | Phase 8 | Pending |
 | BRDG-01 | Phase 6 | Pending |
 | STACK-01 | Phase 6 | Pending |
 | NEW-01 | Phase 7 | Pending |
@@ -182,12 +182,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TMPL-01 | Phase 7 | Pending |
 | TMPL-02 | Phase 7 | Pending |
 | TMPL-03 | Phase 7 | Pending |
-| TEST-01 | Phase 8 | Pending |
-| TEST-02 | Phase 8 | Pending |
-| TEST-03 | Phase 8 | Pending |
-| DOC-01 | Phase 8 | Pending |
-| DOC-02 | Phase 8 | Pending |
-| DOC-03 | Phase 8 | Pending |
+| TEST-01 | Phase 9 | Pending |
+| TEST-02 | Phase 9 | Pending |
+| TEST-03 | Phase 9 | Pending |
+| DOC-01 | Phase 9 | Pending |
+| DOC-02 | Phase 9 | Pending |
+| DOC-03 | Phase 9 | Pending |
 
 **Coverage:**
 - v1 requirements: 43 total
