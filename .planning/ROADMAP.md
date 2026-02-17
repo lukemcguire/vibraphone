@@ -139,10 +139,14 @@ Plans:
   4. Generated governance docs match existing template formats exactly
   5. Agent can call check_prerequisites and receive install commands for any missing dependencies
   6. Template files are bundled in the Python wheel and accessible via importlib.resources
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD
+- [ ] 07-01-PLAN.md — Create bundled templates directory and configure pyproject.toml for wheel inclusion
+- [ ] 07-02-PLAN.md — Implement check_prerequisites utility and MCP tool
+- [ ] 07-03-PLAN.md — Create template_loader utility for importlib.resources access
+- [ ] 07-04-PLAN.md — Implement init_project MCP tool with auto-detection and conflict handling
+- [ ] 07-05-PLAN.md — Create unit tests and Phase 7 success criteria verification
 
 ### Phase 8: Testing & Documentation
 **Goal**: Package tested and documented for users
@@ -172,5 +176,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Worktree & Session Tools | 0/4 | Complete    | 2026-02-17 |
 | 5. Quality Gate Tools | 0/5 | Complete    | 2026-02-17 |
 | 6. Bridge & Stack Tools | 0/4 | Not started | - |
-| 7. Scaffolding & Templates | 0/TBD | Not started | - |
+| 7. Scaffolding & Templates | 0/5 | Not started | - |
 | 8. Testing & Documentation | 0/TBD | Not started | - |
