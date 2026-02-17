@@ -13,11 +13,12 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
-from vibraphone.config import get_config, get_project_root
+from vibraphone.config import get_config
 from vibraphone.server import mcp
 from vibraphone.utils.circuit_breaker import CircuitBreaker
 from vibraphone.utils.code_reviewer import CodeReviewer, MissingAPIKeyError
 from vibraphone.utils.command_runner import get_command, run_command
+from vibraphone.utils.context import get_effective_task_id, get_execution_context
 from vibraphone.utils.quality_state import (
     QualityGateState,
     get_quality_state_manager,
@@ -359,13 +360,13 @@ async def run_tests(component: str | None = None) -> dict:
         status is "pass" or "fail". Circuit breaker can return "ESCALATED".
     """
     config = get_config()
-    project_root = get_project_root()
-    state_manager = get_quality_state_manager("default")
+    exec_dir, session = get_execution_context()
+    state_manager = get_quality_state_manager(get_effective_task_id(session))
 
     # Load state for attempt tracking
     state = state_manager.load()
     if state is None:
-        state = QualityGateState(task_id="default")
+        state = QualityGateState(task_id=get_effective_task_id(session))
 
     # Check circuit breaker before running
     breaker = CircuitBreaker(
@@ -380,7 +381,7 @@ async def run_tests(component: str | None = None) -> dict:
     command = get_command("test", component)
     start_time = datetime.now(UTC)
 
-    returncode, stdout, stderr = await run_command(command, cwd=project_root)
+    returncode, stdout, stderr = await run_command(command, cwd=exec_dir)
 
     end_time = datetime.now(UTC)
     duration_ms = int((end_time - start_time).total_seconds() * 1000)
@@ -408,11 +409,7 @@ async def run_tests(component: str | None = None) -> dict:
         "duration_ms": duration_ms,
         "timestamp": start_time.isoformat(),
         "attempt": state.test_attempts,
-        "next_steps": (
-            ["Tests passed. Ready for next step."]
-            if passed
-            else ["Fix failing tests and run again."]
-        ),
+        "next_steps": (["Tests passed. Ready for next step."] if passed else ["Fix failing tests and run again."]),
     }
 
 
@@ -430,13 +427,13 @@ async def run_lint(component: str | None = None) -> dict:
         Dict with status, output, duration_ms, timestamp, attempt, next_steps.
         status is "pass" (returncode 0) or "fail" (non-zero).
     """
-    project_root = get_project_root()
+    exec_dir, _session = get_execution_context()
 
     # Get command and execute
     command = get_command("lint", component)
     start_time = datetime.now(UTC)
 
-    returncode, stdout, stderr = await run_command(command, cwd=project_root)
+    returncode, stdout, stderr = await run_command(command, cwd=exec_dir)
 
     end_time = datetime.now(UTC)
     duration_ms = int((end_time - start_time).total_seconds() * 1000)
@@ -450,11 +447,7 @@ async def run_lint(component: str | None = None) -> dict:
         "duration_ms": duration_ms,
         "timestamp": start_time.isoformat(),
         "attempt": 0,  # No circuit breaker for lint
-        "next_steps": (
-            ["Lint passed. Ready for next step."]
-            if passed
-            else ["Fix lint errors and run again."]
-        ),
+        "next_steps": (["Lint passed. Ready for next step."] if passed else ["Fix lint errors and run again."]),
     }
 
 
@@ -472,13 +465,13 @@ async def run_format(component: str | None = None) -> dict:
         Dict with status, output, duration_ms, timestamp, attempt, next_steps.
         status is "pass" (returncode 0) or "fail" (non-zero).
     """
-    project_root = get_project_root()
+    exec_dir, _session = get_execution_context()
 
     # Get command and execute
     command = get_command("format", component)
     start_time = datetime.now(UTC)
 
-    returncode, stdout, stderr = await run_command(command, cwd=project_root)
+    returncode, stdout, stderr = await run_command(command, cwd=exec_dir)
 
     end_time = datetime.now(UTC)
     duration_ms = int((end_time - start_time).total_seconds() * 1000)
@@ -493,22 +486,20 @@ async def run_format(component: str | None = None) -> dict:
         "timestamp": start_time.isoformat(),
         "attempt": 0,  # No circuit breaker for format
         "next_steps": (
-            ["Format passed. Ready for next step."]
-            if passed
-            else ["Format failed. Check output for errors."]
+            ["Format passed. Ready for next step."] if passed else ["Format failed. Check output for errors."]
         ),
     }
 
 
 @mcp.tool
-async def request_code_review(task_id: str, files: list[str] | None = None) -> dict:
+async def request_code_review(task_id: str | None = None, files: list[str] | None = None) -> dict:
     """Request LLM code review of staged changes.
 
     This tool handles staging internally. It stages unstaged files (optional filter),
     blocks dangerous files, gets the diff, and sends it to an LLM for review.
 
     Args:
-        task_id: Task ID for state tracking.
+        task_id: Task ID for state tracking. If None, derives from active session.
         files: Optional list of files to stage. If None, stages all unstaged changes.
 
     Returns:
@@ -516,13 +507,14 @@ async def request_code_review(task_id: str, files: list[str] | None = None) -> d
         warnings (blocked dangerous files), attempt, next_steps.
     """
     config = get_config()
-    project_root = get_project_root()
-    state_manager = get_quality_state_manager(task_id)
+    exec_dir, session = get_execution_context()
+    effective_task_id = task_id if task_id else get_effective_task_id(session)
+    state_manager = get_quality_state_manager(effective_task_id)
 
     # Load state
     state = state_manager.load()
     if state is None:
-        state = QualityGateState(task_id=task_id)
+        state = QualityGateState(task_id=effective_task_id)
 
     # Check circuit breaker before running
     breaker = CircuitBreaker(
@@ -534,7 +526,7 @@ async def request_code_review(task_id: str, files: list[str] | None = None) -> d
         return escalation
 
     # Prepare files for review
-    blocked_files, diff_content, error = await prepare_files_for_review(files, project_root)
+    blocked_files, diff_content, error = await prepare_files_for_review(files, exec_dir)
     if error:
         return error
 
@@ -563,9 +555,7 @@ async def request_code_review(task_id: str, files: list[str] | None = None) -> d
     issues_data, summary = review_result
 
     # Determine status based on severity
-    has_errors = any(
-        issue.get("severity") == "error" for issue in issues_data
-    )
+    has_errors = any(issue.get("severity") == "error" for issue in issues_data)
 
     if has_errors:
         review_status = "REJECTED"
@@ -589,13 +579,11 @@ async def request_code_review(task_id: str, files: list[str] | None = None) -> d
     state_manager.save(state)
 
     # Build and return response
-    return build_review_response(
-        review_status, issues_data, summary, state.review_attempts, blocked_files
-    )
+    return build_review_response(review_status, issues_data, summary, state.review_attempts, blocked_files)
 
 
 @mcp.tool
-async def attempt_commit(task_id: str, message: str) -> dict:
+async def attempt_commit(task_id: str | None = None, message: str = "") -> dict:
     """Attempt to commit changes. Requires approved code review.
 
     Enforces the review-before-commit workflow:
@@ -606,15 +594,16 @@ async def attempt_commit(task_id: str, message: str) -> dict:
     All conditions must be met before executing git commit.
 
     Args:
-        task_id: Task ID for state verification.
+        task_id: Task ID for state verification. If None, derives from active session.
         message: Commit message.
 
     Returns:
         Dict with status ("committed" or "error"), message (commit hash or error),
         and next_steps.
     """
-    project_root = get_project_root()
-    state_manager = get_quality_state_manager(task_id)
+    exec_dir, session = get_execution_context()
+    effective_task_id = task_id if task_id else get_effective_task_id(session)
+    state_manager = get_quality_state_manager(effective_task_id)
 
     # Load state
     state = state_manager.load()
@@ -624,11 +613,11 @@ async def attempt_commit(task_id: str, message: str) -> dict:
         return {
             "status": "error",
             "message": "No approved review found. Run request_code_review first.",
-            "next_steps": ["Run request_code_review(task_id) to get approval."],
+            "next_steps": ["Run request_code_review to get approval."],
         }
 
     # Check 2: Staged diff matches reviewed diff
-    returncode, current_diff, stderr = await get_staged_diff(project_root)
+    returncode, current_diff, stderr = await get_staged_diff(exec_dir)
     if returncode != 0:
         return {
             "status": "error",
@@ -641,12 +630,12 @@ async def attempt_commit(task_id: str, message: str) -> dict:
         return {
             "status": "error",
             "message": "Staged changes differ from reviewed changes. Re-review required.",
-            "next_steps": ["Run request_code_review(task_id) again."],
+            "next_steps": ["Run request_code_review again."],
         }
 
     # Check 3: Quality gate passes
     check_command = get_command("check")
-    returncode, stdout, stderr = await run_command(check_command, cwd=project_root)
+    returncode, stdout, stderr = await run_command(check_command, cwd=exec_dir)
 
     if returncode != 0:
         output = stdout + ("\n--- STDERR ---\n" + stderr if stderr else "")
@@ -660,7 +649,7 @@ async def attempt_commit(task_id: str, message: str) -> dict:
         }
 
     # All checks passed - execute commit
-    returncode, stdout, stderr = await run_git_commit(message, cwd=project_root)
+    returncode, stdout, stderr = await run_git_commit(message, cwd=exec_dir)
 
     if returncode != 0:
         output = stdout + ("\n--- STDERR ---\n" + stderr if stderr else "")
