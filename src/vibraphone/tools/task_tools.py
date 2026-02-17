@@ -4,12 +4,13 @@ This module contains MCP tool implementations for task management operations
 with br/bv CLIs. Tools follow the error handling pattern from CONTEXT.md.
 """
 
+import re
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from vibraphone.server import mcp
-from vibraphone.utils.cli_runner import run_cli
+from vibraphone.utils.cli_runner import CliError, run_cli
 
 
 class TaskError(BaseModel):
@@ -173,4 +174,106 @@ async def abandon_task(task_id: str, reason: str) -> dict:
         "task": result.get("issue"),
         "abandoned_at": result.get("updated_at"),
         "reason": reason,
+    }
+
+
+def extract_mermaid_from_markdown(content: str) -> list[str]:
+    """Extract mermaid code blocks from markdown content.
+
+    Args:
+        content: Markdown file contents
+
+    Returns:
+        List of mermaid diagram code blocks (without the ```mermaid wrappers).
+    """
+    pattern = r"```mermaid\n(.*?)```"
+    return re.findall(pattern, content, re.DOTALL)
+
+
+async def get_branch_commits(branch: str, limit: int = 5) -> list[dict]:
+    """Get recent commits from a branch.
+
+    Args:
+        branch: Branch name to get commits from
+        limit: Maximum number of commits to retrieve
+
+    Returns:
+        List of dicts with hash, subject, and date for each commit.
+        Empty list if branch doesn't exist or git command fails.
+    """
+    try:
+        result = await run_cli(
+            "git",
+            "log",
+            branch,
+            f"--max-count={limit}",
+            "--pretty=format:%H|%s|%ci",
+            cwd=get_project_root(),
+        )
+        # run_cli returns dict for JSON output, but git log returns text
+        # We need to handle this case - actually run_cli only parses JSON
+        # Let's use subprocess directly for non-JSON git output
+        import asyncio
+
+        process = await asyncio.create_subprocess_exec(
+            "git",
+            "log",
+            branch,
+            f"--max-count={limit}",
+            "--pretty=format:%H|%s|%ci",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=get_project_root(),
+        )
+        stdout_bytes, _ = await process.communicate()
+        stdout = stdout_bytes.decode("utf-8", errors="replace")
+
+        commits = []
+        for line in stdout.strip().split("\n"):
+            if line and "|" in line:
+                parts = line.split("|", 2)
+                if len(parts) == 3:
+                    commits.append({
+                        "hash": parts[0],
+                        "subject": parts[1],
+                        "date": parts[2],
+                    })
+        return commits
+    except (CliError, Exception):
+        return []
+
+
+@mcp.tool
+async def get_task_context(task_id: str) -> dict:
+    """Load focused context bundle for a task.
+
+    Returns task details, mermaid diagrams from architecture.md,
+    and recent commits on the task branch.
+
+    Args:
+        task_id: The task ID (e.g., bd-abc123)
+
+    Returns:
+        Dict with task details, architecture diagrams, and git context.
+    """
+    # Get task details
+    task = await run_cli("br", "show", task_id, "--json", cwd=get_project_root())
+
+    # Read architecture.md for mermaid diagrams
+    arch_path = get_project_root() / "docs" / "architecture.md"
+    mermaid_diagrams = []
+    if arch_path.exists():
+        content = arch_path.read_text()
+        mermaid_diagrams = extract_mermaid_from_markdown(content)
+
+    # Get recent commits on task branch (if available)
+    branch_name = task.get("branch")
+    commits = []
+    if branch_name:
+        commits = await get_branch_commits(branch_name, limit=5)
+
+    return {
+        "task": task,
+        "architecture_diagrams": mermaid_diagrams,
+        "recent_commits": commits,
     }
