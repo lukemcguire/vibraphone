@@ -42,7 +42,10 @@ class TestPhase5SuccessCriteria:
         assert hasattr(run_tests, "fn")
 
         # Setup mocks
-        mocker.patch("vibraphone.tools.quality_gate_tools.get_project_root", return_value=tmp_path)
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+            return_value=(tmp_path, None),
+        )
         mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
             new_callable=AsyncMock,
@@ -85,7 +88,10 @@ class TestPhase5SuccessCriteria:
         assert hasattr(run_lint, "fn")
 
         # Setup mocks
-        mocker.patch("vibraphone.tools.quality_gate_tools.get_project_root", return_value=tmp_path)
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+            return_value=(tmp_path, None),
+        )
         mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
             new_callable=AsyncMock,
@@ -116,7 +122,10 @@ class TestPhase5SuccessCriteria:
         assert hasattr(run_format, "fn")
 
         # Setup mocks
-        mocker.patch("vibraphone.tools.quality_gate_tools.get_project_root", return_value=tmp_path)
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+            return_value=(tmp_path, None),
+        )
         mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
             new_callable=AsyncMock,
@@ -154,7 +163,10 @@ class TestPhase5SuccessCriteria:
         assert is_dangerous_file("id_rsa") is True
 
         # Setup mocks for APPROVED case
-        mocker.patch("vibraphone.tools.quality_gate_tools.get_project_root", return_value=tmp_path)
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+            return_value=(tmp_path, None),
+        )
 
         mock_config = MagicMock()
         mock_config.circuit_breakers.review.max_attempts = 5
@@ -210,7 +222,10 @@ class TestPhase5SuccessCriteria:
         assert hasattr(attempt_commit, "fn")
 
         # Setup mocks
-        mocker.patch("vibraphone.tools.quality_gate_tools.get_project_root", return_value=tmp_path)
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+            return_value=(tmp_path, None),
+        )
 
         # Test 1: No approved review
         mock_state_manager_class = mocker.patch(
@@ -314,7 +329,10 @@ class TestPhase5SuccessCriteria:
         """QUAL-06: Verify circuit breakers work in actual tools."""
         from vibraphone.tools.quality_gate_tools import run_tests
 
-        mocker.patch("vibraphone.tools.quality_gate_tools.get_project_root", return_value=tmp_path)
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+            return_value=(tmp_path, None),
+        )
 
         # Config with low threshold
         mock_config = MagicMock()
