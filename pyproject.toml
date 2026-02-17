@@ -37,6 +37,11 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# ─── Hatch Build Configuration ──────────────────────────
+[tool.hatch.build.targets.wheel]
+# Include templates directory in wheel for importlib.resources access
+artifacts = ["src/vibraphone/templates/"]
+
 # ─── Ruff ─────────────────────────────────────────────
 [tool.ruff]
 line-length = 120
