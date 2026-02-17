@@ -35,14 +35,21 @@ class TestQualityGateE2E:
         """Circuit breaker tracks failure attempts correctly."""
         from vibraphone.utils.circuit_breaker import CircuitBreaker
 
-        cb = CircuitBreaker(max_attempts=3)
-        assert cb.is_available()
+        cb = CircuitBreaker(max_attempts=3, tool_name="tests")
 
-        # Simulate failures
-        for _ in range(3):
-            cb.record_failure()
+        # Not tripped at 0 attempts
+        assert not cb.is_tripped(0)
 
-        assert not cb.is_available()
+        # Not tripped at 2 attempts
+        assert not cb.is_tripped(2)
+
+        # Tripped at 3 attempts
+        assert cb.is_tripped(3)
+
+        # Check returns escalation response when tripped
+        result = cb.check(3)
+        assert result is not None
+        assert result["status"] == "ESCALATED"
 
 
 @pytest.mark.integration
@@ -59,16 +66,16 @@ class TestInitProjectE2E:
         empty_dir.mkdir()
 
         # Preview first
-        result = await init_project.fn(path=str(empty_dir), preview=True)
+        result = await init_project.fn(project_path=str(empty_dir), preview=True)
 
-        assert "files" in result or "proposed_files" in result
+        assert "files_to_create" in result or "proposed_files" in result
 
     @pytest.mark.asyncio
     async def test_init_project_detects_existing_project(self, git_repo_with_config: Path) -> None:
         """init_project handles existing vibraphone.yaml correctly."""
         from vibraphone.tools.scaffold_tools import init_project
 
-        result = await init_project.fn(path=str(git_repo_with_config), preview=True)
+        result = await init_project.fn(project_path=str(git_repo_with_config), preview=True)
 
         # Should indicate file exists
         assert result is not None
