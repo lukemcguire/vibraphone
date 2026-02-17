@@ -42,9 +42,7 @@ class CircuitBreaker:
             return None
 
         if self.is_tripped(current_attempts):
-            return self.escalation_response(
-                self.tool_name, current_attempts, self.max_attempts
-            )
+            return self.escalation_response(self.tool_name, current_attempts, self.max_attempts)
 
         return None
 

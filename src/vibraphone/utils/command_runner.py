@@ -38,10 +38,8 @@ def get_command(command_type: str, component: str | None = None) -> str:
         ValueError: If command_type is not recognized.
     """
     if command_type not in DEFAULT_COMMANDS:
-        raise ValueError(
-            f"Unknown command type: {command_type}. "
-            f"Valid types: {list(DEFAULT_COMMANDS.keys())}"
-        )
+        msg = f"Unknown command type: {command_type}. Valid types: {list(DEFAULT_COMMANDS.keys())}"
+        raise ValueError(msg)
 
     # Import here to avoid circular dependency
     from vibraphone.config import get_config

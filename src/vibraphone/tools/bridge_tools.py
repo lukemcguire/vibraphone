@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from vibraphone.config import get_config, get_project_root
-from vibraphone.server import mcp
+from vibraphone.mcp_instance import mcp
 from vibraphone.utils.cli_runner import CliError, run_cli
 from vibraphone.utils.errors import TaskError
 from vibraphone.utils.plan_parser import (
@@ -151,13 +154,15 @@ async def _setup_plan_dependencies(
                             "blocks",
                             cwd=get_project_root(),
                         )
-                        deps_created.append({
-                            "blocked": task_id,
-                            "blocker": blocker_id,
-                            "type": "intra-plan",
-                            "blocked_name": task_name,
-                            "blocker_name": blocker_name,
-                        })
+                        deps_created.append(
+                            {
+                                "blocked": task_id,
+                                "blocker": blocker_id,
+                                "type": "intra-plan",
+                                "blocked_name": task_name,
+                                "blocker_name": blocker_name,
+                            }
+                        )
                     except CliError:
                         # Dependency may already exist, continue
                         pass
@@ -180,13 +185,15 @@ async def _setup_plan_dependencies(
                             "blocks",
                             cwd=get_project_root(),
                         )
-                        deps_created.append({
-                            "blocked": first_task,
-                            "blocker": last_dep_task,
-                            "type": "inter-plan",
-                            "blocked_plan": plan_id,
-                            "blocker_plan": dep_plan_id,
-                        })
+                        deps_created.append(
+                            {
+                                "blocked": first_task,
+                                "blocker": last_dep_task,
+                                "type": "inter-plan",
+                                "blocked_plan": plan_id,
+                                "blocker_plan": dep_plan_id,
+                            }
+                        )
                     except CliError:
                         # Dependency may already exist, continue
                         pass
@@ -208,6 +215,158 @@ def _extract_blocked_by_from_tasks(tasks: list[dict]) -> dict[str, str]:
     return blocked_by
 
 
+def _validate_config() -> dict[str, Any] | None:
+    """Validate that components are configured.
+
+    Returns TaskError dict if validation fails, None if valid.
+    """
+    config = get_config()
+    if not config.components:
+        return TaskError(
+            error_type="NoComponentsConfigured",
+            message="No components configured in vibraphone.yaml",
+            suggested_action="Configure components in vibraphone.yaml before importing plans, or use configure_stack to set up the project",
+        ).model_dump()
+    return None
+
+
+def _discover_plan_files(phase_number: int) -> tuple[list[tuple[str, Path]], dict[str, Any] | None]:
+    """Discover plan files for a phase.
+
+    Returns (plan_files, error) where plan_files is list of (plan_id, path) tuples.
+    Returns (empty_list, error_dict) if discovery fails.
+    """
+    phase_dir = _resolve_phase_dir(phase_number)
+    if phase_dir is None:
+        return [], TaskError(
+            error_type="PhaseDirectoryNotFound",
+            message=f"Phase directory not found for phase {phase_number}",
+            suggested_action=f"Ensure .planning/phases/{phase_number:02d}-<name>/ directory exists with PLAN.md files",
+        ).model_dump()
+
+    plan_files = []
+    for path in sorted(phase_dir.iterdir()):
+        match = _PLAN_FILE_RE.match(path.name)
+        if match:
+            plan_files.append((match.group(1), path))
+
+    if not plan_files:
+        return [], TaskError(
+            error_type="NoPlanFilesFound",
+            message=f"No PLAN.md files found in {phase_dir}",
+            suggested_action=f"Create plan files matching NN-NN-PLAN.md pattern in {phase_dir}",
+        ).model_dump()
+
+    return plan_files, None
+
+
+def _parse_plan_file(plan_id: str, plan_path: Path) -> dict[str, Any]:
+    """Parse a single plan file into structured data."""
+    content = plan_path.read_text(encoding="utf-8")
+    frontmatter = extract_frontmatter(content)
+    tasks = extract_tasks_from_xml(content)
+
+    return {
+        "plan_id": plan_id,
+        "path": str(plan_path),
+        "frontmatter": frontmatter,
+        "tasks": tasks,
+        "blocked_by": _extract_blocked_by_from_tasks(tasks),
+    }
+
+
+def _validate_parsed_plans(parsed_plans: list[dict]) -> dict[str, Any] | None:
+    """Validate that all parsed plans have tasks.
+
+    Returns TaskError dict if validation fails, None if valid.
+    """
+    for plan_data in parsed_plans:
+        if not plan_data["tasks"]:
+            return TaskError(
+                error_type="PlanHasNoTasks",
+                message=f"Plan {plan_data['plan_id']} has no tasks",
+                suggested_action=f"Add <tasks> block with <task> elements to {plan_data['path']} or remove the file",
+            ).model_dump()
+    return None
+
+
+def _build_preview_response(parsed_plans: list[dict], phase_number: int, skipped: list[str]) -> dict[str, Any]:
+    """Build the preview response for import_gsd_plan."""
+    preview_data = []
+    for plan_data in parsed_plans:
+        tasks = plan_data["tasks"]
+        preview_data.append(
+            {
+                "plan_id": plan_data["plan_id"],
+                "depends_on": plan_data["frontmatter"].get("depends_on", []),
+                "task_count": len(tasks),
+                "task_titles": [t.get("name") or t.get("title") or f"Task {i}" for i, t in enumerate(tasks)],
+                "blocked_by": plan_data["blocked_by"],
+            }
+        )
+
+    return {
+        "status": "preview",
+        "phase_number": phase_number,
+        "plans": preview_data,
+        "skipped_plans": skipped,
+        "next_steps": [
+            "1. Review the plans to be imported",
+            f"2. Call import_gsd_plan({phase_number}, preview=False) to create tasks",
+        ],
+    }
+
+
+async def _create_all_tasks(
+    parsed_plans: list[dict],
+) -> tuple[
+    dict[str, list[str]],  # plan_tasks
+    dict[str, list[str]],  # plan_deps
+    dict[str, str],  # task_name_to_id
+    dict[str, str],  # task_id_to_name
+    dict[str, str],  # all_blocked_by
+    list[dict],  # tasks_created
+]:
+    """Create Beads tasks for all parsed plans.
+
+    Returns tuple of tracking dictionaries and created tasks list.
+    """
+    plan_tasks: dict[str, list[str]] = {}
+    plan_deps: dict[str, list[str]] = {}
+    task_name_to_id: dict[str, str] = {}
+    task_id_to_name: dict[str, str] = {}
+    all_blocked_by: dict[str, str] = {}
+    tasks_created = []
+
+    for plan_data in parsed_plans:
+        plan_id = plan_data["plan_id"]
+        tasks = plan_data["tasks"]
+        frontmatter = plan_data["frontmatter"]
+
+        deps = frontmatter.get("depends_on", [])
+        if deps:
+            plan_deps[plan_id] = deps if isinstance(deps, list) else [deps]
+
+        plan_task_ids = []
+        for idx, task in enumerate(tasks):
+            beads_id, task_name = await _create_beads_task(plan_id, idx, task, task_name_to_id)
+            plan_task_ids.append(beads_id)
+            task_id_to_name[beads_id] = task_name
+
+            tasks_created.append(
+                {
+                    "plan_id": plan_id,
+                    "beads_id": beads_id,
+                    "task_name": task_name,
+                }
+            )
+
+        plan_tasks[plan_id] = plan_task_ids
+        all_blocked_by.update(plan_data["blocked_by"])
+
+    return plan_tasks, plan_deps, task_name_to_id, task_id_to_name, all_blocked_by, tasks_created
+
+
 @mcp.tool
 async def import_gsd_plan(phase_number: int, *, preview: bool = True) -> dict[str, Any]:
     """Import all GSD PLAN.md files for a phase into Beads tasks.
@@ -226,37 +385,14 @@ async def import_gsd_plan(phase_number: int, *, preview: bool = True) -> dict[st
         dict with status, tasks_created (or tasks_preview), dependencies, next_steps.
         Returns TaskError dict on validation or configuration errors.
     """
-    # Check for components config
-    config = get_config()
-    if not config.components:
-        return TaskError(
-            error_type="NoComponentsConfigured",
-            message="No components configured in vibraphone.yaml",
-            suggested_action="Configure components in vibraphone.yaml before importing plans, or use configure_stack to set up the project",
-        ).model_dump()
+    # Validate configuration
+    if error := _validate_config():
+        return error
 
-    # Resolve phase directory
-    phase_dir = _resolve_phase_dir(phase_number)
-    if phase_dir is None:
-        return TaskError(
-            error_type="PhaseDirectoryNotFound",
-            message=f"Phase directory not found for phase {phase_number}",
-            suggested_action=f"Ensure .planning/phases/{phase_number:02d}-<name>/ directory exists with PLAN.md files",
-        ).model_dump()
-
-    # Discover plan files matching NN-NN-PLAN.md
-    plan_files = []
-    for path in sorted(phase_dir.iterdir()):
-        match = _PLAN_FILE_RE.match(path.name)
-        if match:
-            plan_files.append((match.group(1), path))
-
-    if not plan_files:
-        return TaskError(
-            error_type="NoPlanFilesFound",
-            message=f"No PLAN.md files found in {phase_dir}",
-            suggested_action=f"Create plan files matching NN-NN-PLAN.md pattern in {phase_dir}",
-        ).model_dump()
+    # Discover plan files
+    plan_files, error = _discover_plan_files(phase_number)
+    if error:
+        return error
 
     # Idempotency check - skip plans with existing plan:<id> labels
     existing = await _existing_plan_ids()
@@ -271,94 +407,21 @@ async def import_gsd_plan(phase_number: int, *, preview: bool = True) -> dict[st
             "next_steps": ["1. Use list_tasks() to see imported tasks"],
         }
 
-    # Parse all plans for validation and preview
-    parsed_plans = []
-    for plan_id, plan_path in plan_files:
-        content = plan_path.read_text(encoding="utf-8")
-        frontmatter = extract_frontmatter(content)
-        tasks = extract_tasks_from_xml(content)
+    # Parse all plans
+    parsed_plans = [_parse_plan_file(plan_id, path) for plan_id, path in plan_files]
 
-        parsed_plans.append({
-            "plan_id": plan_id,
-            "path": str(plan_path),
-            "frontmatter": frontmatter,
-            "tasks": tasks,
-            "blocked_by": _extract_blocked_by_from_tasks(tasks),
-        })
-
-    # Fail-fast validation: check all plans have tasks
-    for plan_data in parsed_plans:
-        if not plan_data["tasks"]:
-            return TaskError(
-                error_type="PlanHasNoTasks",
-                message=f"Plan {plan_data['plan_id']} has no tasks",
-                suggested_action=f"Add <tasks> block with <task> elements to {plan_data['path']} or remove the file",
-            ).model_dump()
+    # Validate parsed plans
+    if error := _validate_parsed_plans(parsed_plans):
+        return error
 
     # Preview mode: return what would be imported
     if preview:
-        preview_data = []
-        for plan_data in parsed_plans:
-            tasks = plan_data["tasks"]
-            preview_data.append({
-                "plan_id": plan_data["plan_id"],
-                "depends_on": plan_data["frontmatter"].get("depends_on", []),
-                "task_count": len(tasks),
-                "task_titles": [
-                    t.get("name") or t.get("title") or f"Task {i}"
-                    for i, t in enumerate(tasks)
-                ],
-                "blocked_by": plan_data["blocked_by"],
-            })
-
-        return {
-            "status": "preview",
-            "phase_number": phase_number,
-            "plans": preview_data,
-            "skipped_plans": skipped,
-            "next_steps": [
-                "1. Review the plans to be imported",
-                f"2. Call import_gsd_plan({phase_number}, preview=False) to create tasks",
-            ],
-        }
+        return _build_preview_response(parsed_plans, phase_number, skipped)
 
     # Create tasks for all plans
-    plan_tasks: dict[str, list[str]] = {}  # plan_id -> list of beads issue IDs
-    plan_deps: dict[str, list[str]] = {}  # plan_id -> list of depends_on plan IDs
-    task_name_to_id: dict[str, str] = {}  # task_name -> beads issue ID
-    task_id_to_name: dict[str, str] = {}  # beads issue ID -> task_name
-    all_blocked_by: dict[str, str] = {}  # merged from all plans
-    tasks_created = []
-
-    for plan_data in parsed_plans:
-        plan_id = plan_data["plan_id"]
-        tasks = plan_data["tasks"]
-        frontmatter = plan_data["frontmatter"]
-
-        # Store inter-plan dependencies from frontmatter
-        deps = frontmatter.get("depends_on", [])
-        if deps:
-            plan_deps[plan_id] = deps if isinstance(deps, list) else [deps]
-
-        # Create tasks for this plan
-        plan_task_ids = []
-        for idx, task in enumerate(tasks):
-            beads_id, task_name = await _create_beads_task(
-                plan_id, idx, task, task_name_to_id
-            )
-            plan_task_ids.append(beads_id)
-            task_id_to_name[beads_id] = task_name
-
-            tasks_created.append({
-                "plan_id": plan_id,
-                "beads_id": beads_id,
-                "task_name": task_name,
-            })
-
-        plan_tasks[plan_id] = plan_task_ids
-
-        # Merge blocked_by mappings
-        all_blocked_by.update(plan_data["blocked_by"])
+    plan_tasks, plan_deps, task_name_to_id, task_id_to_name, all_blocked_by, tasks_created = await _create_all_tasks(
+        parsed_plans
+    )
 
     # Wire up dependencies (intra-plan and inter-plan)
     dependencies = await _setup_plan_dependencies(
@@ -370,11 +433,8 @@ async def import_gsd_plan(phase_number: int, *, preview: bool = True) -> dict[st
     )
 
     # Sync with beads
-    try:
+    with contextlib.suppress(CliError):
         await run_cli("br", "sync", "--flush-only", cwd=get_project_root())
-    except CliError:
-        # Sync may fail if there are issues, but tasks are already created
-        pass
 
     return {
         "status": "imported",

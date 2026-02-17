@@ -11,6 +11,7 @@ from typing import Any
 @dataclass
 class Prerequisite:
     """Information about a required tool."""
+
     tool: str
     installed: bool
     install_command: str
@@ -74,11 +75,13 @@ def check_prerequisites() -> dict[str, Any]:
         installed = path is not None
 
         install_cmd = INSTALL_COMMANDS.get(tool, {}).get(system, f"# Install {tool} for your platform")
-        results.append(Prerequisite(
-            tool=tool,
-            installed=installed,
-            install_command=install_cmd if not installed else "",
-        ))
+        results.append(
+            Prerequisite(
+                tool=tool,
+                installed=installed,
+                install_command=install_cmd if not installed else "",
+            )
+        )
 
         if not installed:
             install_commands.append(install_cmd)
@@ -91,7 +94,9 @@ def check_prerequisites() -> dict[str, Any]:
 
     return {
         "platform": system,
-        "prerequisites": [{"tool": r.tool, "installed": r.installed, "install_command": r.install_command} for r in results],
+        "prerequisites": [
+            {"tool": r.tool, "installed": r.installed, "install_command": r.install_command} for r in results
+        ],
         "all_installed": all(r.installed for r in results),
         "shell_script": shell_script,
         "missing_core": [r.tool for r in results if r.tool in CORE_DEPENDENCIES and not r.installed],

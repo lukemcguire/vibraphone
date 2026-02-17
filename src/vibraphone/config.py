@@ -7,7 +7,6 @@ This allows the server to start without vibraphone.yaml present.
 import sys
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -182,7 +181,7 @@ class VibraphoneConfig(BaseModel):
         mode="before",
     )
     @classmethod
-    def handle_none_sections(cls, v: Any) -> Any:  # noqa: ANN401
+    def handle_none_sections(cls, v: object) -> object:
         """Convert None to empty dict for optional sections."""
         if v is None:
             return {}
@@ -190,13 +189,13 @@ class VibraphoneConfig(BaseModel):
 
     @field_validator("worktrees_path", mode="before")
     @classmethod
-    def expand_tilde(cls, v: Any) -> Path:  # noqa: ANN401
+    def expand_tilde(cls, v: object) -> Path:
         """Expand ~ in worktrees_path."""
         if isinstance(v, str):
             return Path(v).expanduser()
         if isinstance(v, Path):
             return v.expanduser()
-        return v
+        return Path(str(v)) if v else Path()
 
 
 def find_config_file() -> Path | None:

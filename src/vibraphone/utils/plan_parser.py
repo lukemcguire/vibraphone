@@ -9,6 +9,7 @@ All functions are pure (no I/O) - callers handle file reading.
 import re
 
 import yaml
+from defusedxml.ElementTree import ParseError
 from defusedxml.ElementTree import fromstring as parse_xml
 
 # Regex pattern for YAML frontmatter between --- fences
@@ -54,9 +55,10 @@ def extract_frontmatter(content: str) -> dict:
         return {}
     try:
         result = yaml.safe_load(match.group(1))
-        return result if result is not None else {}
     except yaml.YAMLError:
         return {}
+    else:
+        return result if result is not None else {}
 
 
 def sanitize_xml_content(raw: str) -> str:
@@ -137,7 +139,7 @@ def extract_tasks_from_xml(body: str) -> list[dict]:
 
     try:
         root = parse_xml(xml_str)
-    except Exception:
+    except ParseError:
         return []
 
     tasks = []

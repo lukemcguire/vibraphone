@@ -189,7 +189,7 @@ async def rebase_onto_main(worktree_path: Path, branch_name: str) -> dict:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    _, stderr = await process.communicate()
+    _stdout, _stderr = await process.communicate()
 
     if process.returncode == 0:
         return {"success": True, "branch": branch_name}
@@ -205,9 +205,7 @@ async def rebase_onto_main(worktree_path: Path, branch_name: str) -> dict:
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, _ = await diff_process.communicate()
-    conflicted_files = [
-        f for f in stdout.decode().strip().split("\n") if f
-    ]
+    conflicted_files = [f for f in stdout.decode().strip().split("\n") if f]
 
     # CRITICAL: Abort rebase to restore clean state
     abort = await asyncio.create_subprocess_exec(

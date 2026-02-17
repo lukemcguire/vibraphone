@@ -7,10 +7,12 @@ via importlib.resources for compatibility with pip installed wheels.
 from __future__ import annotations
 
 from importlib import resources
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from jinja2 import Environment, select_autoescape
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def get_template_package() -> resources.abc.Traversable:
@@ -46,6 +48,22 @@ def load_template(template_name: str) -> str:
     return template_path.read_text(encoding="utf-8")
 
 
+def _iter_files_recursive(traversable: resources.abc.Traversable) -> Iterator[resources.abc.Traversable]:
+    """Recursively iterate over all files in a Traversable.
+
+    Args:
+        traversable: The directory to iterate over.
+
+    Yields:
+        Each file found in the tree.
+    """
+    for item in traversable.iterdir():
+        if item.is_file():
+            yield item
+        elif item.is_dir():
+            yield from _iter_files_recursive(item)
+
+
 def load_template_tree(subdir: str) -> dict[str, str]:
     """Load all templates from a subdirectory.
 
@@ -57,12 +75,14 @@ def load_template_tree(subdir: str) -> dict[str, str]:
     """
     template_files = get_template_package()
     target = template_files / subdir
+    target_str = str(target)
 
     templates: dict[str, str] = {}
-    for item in target.rglob("*"):
-        if item.is_file():
-            rel_path = item.relative_to(target)
-            templates[str(rel_path)] = item.read_text(encoding="utf-8")
+    for item in _iter_files_recursive(target):
+        # Compute relative path by removing target prefix
+        item_str = str(item)
+        rel_path = item_str[len(target_str) + 1 :]  # +1 for the path separator
+        templates[rel_path] = item.read_text(encoding="utf-8")
 
     return templates
 
@@ -92,13 +112,14 @@ def get_all_template_paths() -> list[str]:
         List of relative paths within templates/ directory.
     """
     template_files = get_template_package()
+    template_files_str = str(template_files)
     paths: list[str] = []
 
-    for item in template_files.rglob("*"):
-        if item.is_file() and "__pycache__" not in str(item):
-            # Get path relative to templates package
-            rel = item.relative_to(template_files)
-            rel_str = str(rel)
+    for item in _iter_files_recursive(template_files):
+        item_str = str(item)
+        if "__pycache__" not in item_str:
+            # Compute relative path by removing template_files prefix
+            rel_str = item_str[len(template_files_str) + 1 :]  # +1 for the path separator
             # Exclude __init__.py (package marker, not a template)
             if rel_str != "__init__.py":
                 paths.append(rel_str)

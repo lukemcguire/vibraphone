@@ -27,7 +27,7 @@ class SessionState(BaseModel):
     branch_name: str
     started_at: datetime
 
-    def model_dump_json(self) -> str:
+    def to_json_string(self) -> str:
         """Serialize session state to JSON string.
 
         Handles Path and datetime serialization for JSON compatibility.
@@ -96,7 +96,7 @@ class SessionManager:
             delete=False,
             encoding="utf-8",
         ) as temp_file:
-            temp_file.write(state.model_dump_json())
+            temp_file.write(state.to_json_string())
             temp_name = temp_file.name
 
         # Atomic rename (POSIX guarantees atomicity)
@@ -120,9 +120,6 @@ def get_session_manager() -> SessionManager:
     from vibraphone.config import find_config_file
 
     config_path = find_config_file()
-    if config_path is not None:
-        project_root = config_path.parent
-    else:
-        project_root = Path.cwd()
+    project_root = config_path.parent if config_path is not None else Path.cwd()
 
     return SessionManager(project_root)

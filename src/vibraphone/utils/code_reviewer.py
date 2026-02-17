@@ -4,14 +4,57 @@ Uses OpenRouter (OpenAI-compatible API) with instructor for Pydantic-validated
 structured output from LLM code reviews.
 """
 
+from __future__ import annotations
+
 import os
-from typing import Literal
+from typing import Literal, Protocol, TypeVar, runtime_checkable
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
+
+_T = TypeVar("_T", bound=BaseModel)
+
+
+@runtime_checkable
+class InstructorClient(Protocol):
+    """Protocol for instructor-patched OpenAI client.
+
+    The instructor library dynamically patches the OpenAI client to add
+    the response_model parameter to chat.completions.create(). This protocol
+    describes the interface we need for type checking.
+    """
+
+    @property
+    def chat(self) -> ChatCompletions:
+        """Access chat completions API."""
+        ...
+
+
+class ChatCompletions(Protocol):
+    """Protocol for chat.completions interface."""
+
+    @property
+    def completions(self) -> Completions:
+        """Access completions API."""
+        ...
+
+
+class Completions(Protocol):
+    """Protocol for completions.create with instructor extensions."""
+
+    def create(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        response_model: type[_T],
+        max_retries: int = 3,
+    ) -> _T:
+        """Create a chat completion with structured output."""
+        ...
 
 
 class ReviewIssue(BaseModel):
@@ -48,6 +91,8 @@ class MissingAPIKeyError(Exception):
 class CodeReviewer:
     """LLM-powered code reviewer using instructor + OpenRouter."""
 
+    _client: InstructorClient | None
+
     def __init__(self, model: str = "anthropic/claude-3-sonnet") -> None:
         """Initialize the code reviewer.
 
@@ -64,7 +109,7 @@ class CodeReviewer:
         self.model = model
         self._client = None
 
-    def _get_client(self):
+    def _get_client(self) -> InstructorClient:
         """Get or create the instructor-patched OpenAI client.
 
         Lazy import to avoid errors if instructor not installed.
@@ -74,12 +119,14 @@ class CodeReviewer:
                 import instructor
                 from openai import OpenAI
             except ImportError as e:
-                raise ImportError(
+                msg = (
                     "instructor and openai packages required for code review.\n"
                     "Install with: uv add instructor python-dotenv"
-                ) from e
+                )
+                raise ImportError(msg) from e
 
             # OpenRouter uses OpenAI SDK with custom base_url
+            # instructor.patch() returns a client conforming to InstructorClient protocol
             self._client = instructor.patch(
                 OpenAI(
                     base_url="https://openrouter.ai/api/v1",

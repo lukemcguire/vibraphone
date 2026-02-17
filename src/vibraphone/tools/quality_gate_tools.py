@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from vibraphone.config import get_config
-from vibraphone.server import mcp
+from vibraphone.mcp_instance import mcp
 from vibraphone.utils.circuit_breaker import CircuitBreaker
 from vibraphone.utils.code_reviewer import CodeReviewer, MissingAPIKeyError
 from vibraphone.utils.command_runner import get_command, run_command
@@ -268,7 +268,7 @@ def build_review_response(
 async def prepare_files_for_review(
     files: list[str] | None,
     project_root: Path,
-) -> tuple[list[str], list[str], dict | None]:
+) -> tuple[list[str], str, dict | None]:
     """Prepare files for review by staging safe files.
 
     Args:
@@ -276,7 +276,7 @@ async def prepare_files_for_review(
         project_root: Project root directory.
 
     Returns:
-        Tuple of (blocked_files, diff_hash, error_dict).
+        Tuple of (blocked_files, diff_content, error_dict).
         If error_dict is not None, staging or diff fetch failed.
     """
     # Get unstaged files

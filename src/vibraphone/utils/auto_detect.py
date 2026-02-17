@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def detect_git_remote(project_root: Path) -> str | None:
@@ -21,7 +23,7 @@ def detect_git_remote(project_root: Path) -> str | None:
         return None
 
     content = git_config.read_text(encoding="utf-8")
-    match = re.search(r'url\s*=\s*(.+)', content)
+    match = re.search(r"url\s*=\s*(.+)", content)
     if match:
         return match.group(1).strip()
     return None

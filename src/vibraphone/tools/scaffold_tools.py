@@ -7,7 +7,7 @@ from difflib import unified_diff
 from pathlib import Path
 from typing import Any
 
-from vibraphone.server import mcp
+from vibraphone.mcp_instance import mcp
 from vibraphone.utils.auto_detect import detect_project_metadata
 from vibraphone.utils.prerequisites import check_prerequisites as check_prereqs
 from vibraphone.utils.template_loader import (
@@ -20,7 +20,7 @@ from vibraphone.utils.template_loader import (
 def _progress(message: str, status: str = "OK") -> None:
     """Print progress step with status indicator."""
     indicators = {
-        "OK": "\u2713",    # checkmark
+        "OK": "\u2713",  # checkmark
         "FAIL": "\u2717",  # x mark
         "SKIP": "\u2192",  # arrow
     }
@@ -51,12 +51,14 @@ def _generate_diff(path: Path, existing: str, proposed: str) -> str:
     """Generate unified diff for conflict display."""
     existing_lines = existing.splitlines(keepends=True)
     proposed_lines = proposed.splitlines(keepends=True)
-    return "".join(unified_diff(
-        existing_lines,
-        proposed_lines,
-        fromfile=f"{path} (existing)",
-        tofile=f"{path} (proposed)",
-    ))
+    return "".join(
+        unified_diff(
+            existing_lines,
+            proposed_lines,
+            fromfile=f"{path} (existing)",
+            tofile=f"{path} (proposed)",
+        )
+    )
 
 
 def _render_all_templates(variables: dict[str, Any]) -> dict[str, str]:
@@ -75,10 +77,7 @@ def _render_all_templates(variables: dict[str, Any]) -> dict[str, str]:
         content = load_template(template_path)
 
         # Determine destination path (remove .j2 extension for Jinja templates)
-        if template_path.endswith(".j2"):
-            dest_path = template_path[:-3]
-        else:
-            dest_path = template_path
+        dest_path = template_path[:-3] if template_path.endswith(".j2") else template_path
 
         # Render if it's a Jinja template (check for {{ in content)
         if "{{" in content or "{%" in content:
@@ -104,12 +103,14 @@ def _check_conflicts(project_root: Path, proposed_files: dict[str, str]) -> tupl
         if full_path.exists():
             existing = full_path.read_text(encoding="utf-8")
             if existing.strip() != content.strip():
-                conflicts.append({
-                    "path": str(rel_path),
-                    "diff": _generate_diff(full_path, existing, content),
-                    "existing": existing,
-                    "proposed": content,
-                })
+                conflicts.append(
+                    {
+                        "path": str(rel_path),
+                        "diff": _generate_diff(full_path, existing, content),
+                        "existing": existing,
+                        "proposed": content,
+                    }
+                )
         else:
             non_conflicting[rel_path] = content
 
@@ -244,7 +245,7 @@ async def init_project(
     justfile_path = project_root / "Justfile"
     if not justfile_path.exists():
         # Create minimal Justfile with bootstrap recipe
-        justfile_content = f'''# {final_values["project_name"]} - Justfile
+        justfile_content = f"""# {final_values["project_name"]} - Justfile
 
 # Bootstrap project dependencies
 bootstrap:
@@ -261,7 +262,7 @@ lint:
 # Run formatter
 format:
     @echo "Configure with configure_stack tool"
-'''
+"""
         justfile_path.write_text(justfile_content, encoding="utf-8")
         files_written.append("Justfile")
 

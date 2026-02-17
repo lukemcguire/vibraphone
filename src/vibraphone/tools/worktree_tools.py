@@ -5,13 +5,15 @@ including start_task, merge_task, cleanup_task, and recover_session.
 """
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 
 from vibraphone.config import get_config, get_project_root
-from vibraphone.server import mcp
+from vibraphone.mcp_instance import mcp
 from vibraphone.utils.errors import TaskError
 from vibraphone.utils.session import SessionManager, SessionState
 from vibraphone.utils.worktree_ops import (
+    RebaseError,
+    WorktreeError,
     check_branch_merged,
     check_uncommitted_changes,
     create_worktree,
@@ -57,7 +59,7 @@ async def start_task(task_id: str) -> dict:
             task_id=task_id,
             worktree_path=worktree_path,
             branch_name=branch_name,
-            started_at=datetime.now(),
+            started_at=datetime.now(UTC),
         )
     )
 
@@ -100,11 +102,8 @@ async def merge_task(task_id: str) -> dict:
     # Attempt rebase - let RebaseError propagate (includes conflict info)
     try:
         await rebase_onto_main(worktree_path, branch_name)
-    except Exception as e:
-        # RebaseError and WorktreeError both have model_dump()
-        if hasattr(e, "model_dump"):
-            return e.model_dump()
-        raise
+    except (RebaseError, WorktreeError) as e:
+        return e.model_dump()
 
     # Session is NOT cleared after merge - cleanup_task handles that
     return {

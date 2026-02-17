@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import yaml
 
@@ -13,7 +15,7 @@ from vibraphone.config import (
     find_config_file,
     get_project_root,
 )
-from vibraphone.server import mcp
+from vibraphone.mcp_instance import mcp
 
 # Section markers for Justfile
 _COMPONENT_RECIPES_START = "# === COMPONENT RECIPES ==="
@@ -62,21 +64,23 @@ def _render_component_section(components: dict[str, dict[str, Any]]) -> str:
     lint_deps = " ".join(f"lint-{n}" for n in names)
     format_deps = " ".join(f"format-{n}" for n in names)
 
-    sections.extend([
-        "",
-        "# Aggregate test recipe",
-        f"test *ARGS: {test_deps}",
-        '    @echo "All tests passed."',
-        "",
-        "# Aggregate lint recipe",
-        f"lint: {lint_deps}",
-        '    @echo "All linting passed."',
-        "",
-        "# Aggregate format recipe",
-        f"format: {format_deps}",
-        '    @echo "All formatting done."',
-        "",
-    ])
+    sections.extend(
+        [
+            "",
+            "# Aggregate test recipe",
+            f"test *ARGS: {test_deps}",
+            '    @echo "All tests passed."',
+            "",
+            "# Aggregate lint recipe",
+            f"lint: {lint_deps}",
+            '    @echo "All linting passed."',
+            "",
+            "# Aggregate format recipe",
+            f"format: {format_deps}",
+            '    @echo "All formatting done."',
+            "",
+        ]
+    )
 
     # Per-component recipes
     for name, comp in components.items():
@@ -254,10 +258,6 @@ async def configure_stack(
     yaml_content = _render_vibraphone_yaml(components, existing_config)
 
     if preview:
-        # Read existing Justfile for context
-        justfile_path = project_root / "Justfile"
-        existing_justfile = justfile_path.read_text() if justfile_path.exists() else ""
-
         result: dict[str, Any] = {
             "status": "preview",
             "component_section": component_section,

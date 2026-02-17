@@ -9,7 +9,7 @@ import subprocess
 
 # Re-export get_project_root from config for backward compatibility
 from vibraphone.config import get_project_root
-from vibraphone.server import mcp
+from vibraphone.mcp_instance import mcp
 from vibraphone.utils.cli_runner import CliError, run_cli
 from vibraphone.utils.errors import TaskError
 
