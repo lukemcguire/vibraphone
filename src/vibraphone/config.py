@@ -31,6 +31,40 @@ KNOWN_TOP_LEVEL_FIELDS = {
 # difflib cutoff for typo suggestions
 TYPO_SUGGESTION_CUTOFF = 0.6
 
+# Stack defaults for different languages (used by configure_stack tool)
+STACK_DEFAULTS: dict[str, dict[str, str]] = {
+    "python": {
+        "test_command": "uv run pytest --tb=short",
+        "lint_command": "uv run ruff check . && uv run ruff format --check .",
+        "format_command": "uv run ruff check --fix . && uv run ruff format .",
+    },
+    "typescript": {
+        "test_command": "npx vitest run",
+        "lint_command": "npx eslint .",
+        "format_command": "npx eslint --fix . && npx prettier --write .",
+    },
+    "go": {
+        "test_command": "go test ./...",
+        "lint_command": "golangci-lint run",
+        "format_command": "gofmt -w .",
+    },
+    "rust": {
+        "test_command": "cargo test",
+        "lint_command": "cargo clippy -- -D warnings",
+        "format_command": "cargo fmt",
+    },
+    "ruby": {
+        "test_command": "bundle exec rspec",
+        "lint_command": "bundle exec rubocop",
+        "format_command": "bundle exec rubocop -a",
+    },
+    "java": {
+        "test_command": "./gradlew test",
+        "lint_command": "./gradlew checkstyleMain",
+        "format_command": "./gradlew spotlessApply",
+    },
+}
+
 
 class ProjectConfig(BaseModel):
     """Project identification."""
@@ -88,6 +122,30 @@ class ReviewConfig(BaseModel):
     model: str = "anthropic/claude-3-sonnet"
 
 
+class ComponentConfig(BaseModel):
+    """Configuration for a single project component."""
+
+    language: str = "python"
+    root: str = "./"
+    test_command: str | None = None
+    lint_command: str | None = None
+    format_command: str | None = None
+    coverage_threshold: int = 80
+
+
+class StitchConfig(BaseModel):
+    """Stitch MCP integration settings."""
+
+    enabled: bool = False
+    project_id: str | None = None
+
+
+class BeadsConfig(BaseModel):
+    """Beads task management settings."""
+
+    database_path: str = ".beads/beads.db"
+
+
 class VibraphoneConfig(BaseModel):
     """Full vibraphone.yaml configuration.
 
@@ -104,10 +162,25 @@ class VibraphoneConfig(BaseModel):
     circuit_breakers: CircuitBreakersConfig = Field(default_factory=CircuitBreakersConfig)
     review: ReviewConfig = Field(default_factory=ReviewConfig)
 
+    # Component configuration (for configure_stack tool)
+    components: dict[str, ComponentConfig] = Field(default_factory=dict)
+    stitch: StitchConfig = Field(default_factory=StitchConfig)
+    beads: BeadsConfig = Field(default_factory=BeadsConfig)
+
     # The key configurable path (CFG-04)
     worktrees_path: Path = Field(default=DEFAULT_WORKTREES_PATH)
 
-    @field_validator("project", "worktree", "quality_gate", "circuit_breakers", "review", mode="before")
+    @field_validator(
+        "project",
+        "worktree",
+        "quality_gate",
+        "circuit_breakers",
+        "review",
+        "components",
+        "stitch",
+        "beads",
+        mode="before",
+    )
     @classmethod
     def handle_none_sections(cls, v: Any) -> Any:  # noqa: ANN401
         """Convert None to empty dict for optional sections."""
@@ -281,3 +354,22 @@ def get_project_root() -> Path:
     if config_path is not None:
         return config_path.parent
     return Path.cwd()
+
+
+def get_component_commands(component_name: str) -> dict[str, str]:
+    """Get commands for a component, falling back to STACK_DEFAULTS by language.
+
+    Args:
+        component_name: Name of the component to look up
+
+    Returns:
+        Dict with test, lint, format commands for the component
+    """
+    config = get_config()
+    comp = config.components.get(component_name, ComponentConfig())
+    defaults = STACK_DEFAULTS.get(comp.language, {})
+    return {
+        "test": comp.test_command or defaults.get("test_command", "echo 'no test command'"),
+        "lint": comp.lint_command or defaults.get("lint_command", "echo 'no lint command'"),
+        "format": comp.format_command or defaults.get("format_command", "echo 'no format command'"),
+    }
