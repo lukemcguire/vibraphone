@@ -124,6 +124,9 @@ python-version = "3.13"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "--import-mode=importlib --timeout=60"
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
 
 # ─── Coverage ─────────────────────────────────────────
 [tool.coverage.report]
