@@ -104,7 +104,7 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
+"tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001", "SLF001", "S603"]
 
 # ─── Type Checking ────────────────────────────────────
 [tool.ty.environment]
@@ -124,3 +124,9 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["."]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.1",
+    "ty>=0.0.17",
+]

@@ -40,7 +40,9 @@ class TestListTasks:
             "issues": [{"id": "bd-1", "status": "ready"}],
             "dependency_graph": {},
         }
-        mock_run_cli = mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_result)
+        mock_run_cli = mocker.patch(
+            "vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_result
+        )
 
         from vibraphone.tools.task_tools import list_tasks
 
@@ -60,7 +62,9 @@ class TestListTasks:
             "issues": [{"id": "bd-1", "plan": "03-01"}],
             "dependency_graph": {},
         }
-        mock_run_cli = mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_result)
+        mock_run_cli = mocker.patch(
+            "vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_result
+        )
 
         from vibraphone.tools.task_tools import list_tasks
 
@@ -164,7 +168,11 @@ class TestCompleteTask:
         # First call: show task (not blocked)
         # Second call: close task
         mock_show = {"id": "bd-1", "status": "in_progress"}
-        mock_close = {"issue": {"id": "bd-1", "status": "completed"}, "unblocked": ["bd-2", "bd-3"], "closed_at": "2026-02-16T12:00:00Z"}
+        mock_close = {
+            "issue": {"id": "bd-1", "status": "completed"},
+            "unblocked": ["bd-2", "bd-3"],
+            "closed_at": "2026-02-16T12:00:00Z",
+        }
 
         mock_run_cli = mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock)
         mock_run_cli.side_effect = [mock_show, mock_close]
@@ -197,7 +205,11 @@ class TestCompleteTask:
     async def test_complete_task_with_notes(self, mocker):
         """Verify complete_task passes notes to CLI."""
         mock_show = {"id": "bd-1", "status": "ready"}
-        mock_close = {"issue": {"id": "bd-1", "status": "completed"}, "unblocked": [], "closed_at": "2026-02-16T12:00:00Z"}
+        mock_close = {
+            "issue": {"id": "bd-1", "status": "completed"},
+            "unblocked": [],
+            "closed_at": "2026-02-16T12:00:00Z",
+        }
 
         mock_run_cli = mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock)
         mock_run_cli.side_effect = [mock_show, mock_close]
@@ -220,7 +232,9 @@ class TestAbandonTask:
     async def test_abandon_task_success_with_reason(self, mocker):
         """Verify abandon_task resets status and records reason."""
         mock_result = {"issue": {"id": "bd-1", "status": "ready"}, "updated_at": "2026-02-16T12:00:00Z"}
-        mock_run_cli = mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_result)
+        mock_run_cli = mocker.patch(
+            "vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_result
+        )
 
         from vibraphone.tools.task_tools import abandon_task
 
@@ -235,16 +249,15 @@ class TestAbandonTask:
         assert "--notes" in call_args[0]
         assert "Abandoned: Blocked by dependency" in call_args[0]
 
-    @pytest.mark.asyncio
-    async def test_abandon_task_requires_reason(self, mocker):
+    def test_abandon_task_requires_reason(self):
         """Verify abandon_task requires reason parameter."""
         # This test verifies the function signature requires reason
         # The actual TypeError would be caught at call time
-        from vibraphone.tools.task_tools import abandon_task
-
         # Function signature should require reason parameter
         # Access underlying function's signature
         import inspect
+
+        from vibraphone.tools.task_tools import abandon_task
 
         sig = inspect.signature(abandon_task.fn)
         params = sig.parameters
@@ -267,7 +280,9 @@ class TestGetTaskContext:
         mock_run_cli.return_value = mock_task
 
         # Mock get_branch_commits to return empty
-        mocker.patch("vibraphone.tools.task_tools.get_branch_commits", new_callable=AsyncMock, return_value=mock_commits)
+        mocker.patch(
+            "vibraphone.tools.task_tools.get_branch_commits", new_callable=AsyncMock, return_value=mock_commits
+        )
 
         # Create mock architecture.md
         arch_dir = tmp_path / "docs"
@@ -311,7 +326,9 @@ class TestGetTaskContext:
         mock_commits = [{"hash": "abc123", "subject": "Initial commit", "date": "2026-02-16"}]
 
         mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_task)
-        mocker.patch("vibraphone.tools.task_tools.get_branch_commits", new_callable=AsyncMock, return_value=mock_commits)
+        mocker.patch(
+            "vibraphone.tools.task_tools.get_branch_commits", new_callable=AsyncMock, return_value=mock_commits
+        )
         mocker.patch("vibraphone.tools.task_tools.get_project_root", return_value=tmp_path)
 
         from vibraphone.tools.task_tools import get_task_context
@@ -412,7 +429,9 @@ class TestPhase3SuccessCriteria:
         mock_commits = []
 
         mocker.patch("vibraphone.tools.task_tools.run_cli", new_callable=AsyncMock, return_value=mock_task)
-        mocker.patch("vibraphone.tools.task_tools.get_branch_commits", new_callable=AsyncMock, return_value=mock_commits)
+        mocker.patch(
+            "vibraphone.tools.task_tools.get_branch_commits", new_callable=AsyncMock, return_value=mock_commits
+        )
 
         # Create mock architecture.md
         arch_dir = tmp_path / "docs"

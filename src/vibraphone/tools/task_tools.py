@@ -5,6 +5,7 @@ with br/bv CLIs. Tools follow the error handling pattern from CONTEXT.md.
 """
 
 import re
+import subprocess
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -201,20 +202,9 @@ async def get_branch_commits(branch: str, limit: int = 5) -> list[dict]:
         List of dicts with hash, subject, and date for each commit.
         Empty list if branch doesn't exist or git command fails.
     """
-    try:
-        result = await run_cli(
-            "git",
-            "log",
-            branch,
-            f"--max-count={limit}",
-            "--pretty=format:%H|%s|%ci",
-            cwd=get_project_root(),
-        )
-        # run_cli returns dict for JSON output, but git log returns text
-        # We need to handle this case - actually run_cli only parses JSON
-        # Let's use subprocess directly for non-JSON git output
-        import asyncio
+    import asyncio
 
+    try:
         process = await asyncio.create_subprocess_exec(
             "git",
             "log",
@@ -227,20 +217,22 @@ async def get_branch_commits(branch: str, limit: int = 5) -> list[dict]:
         )
         stdout_bytes, _ = await process.communicate()
         stdout = stdout_bytes.decode("utf-8", errors="replace")
-
+    except (CliError, OSError, subprocess.SubprocessError):
+        return []
+    else:
         commits = []
         for line in stdout.strip().split("\n"):
             if line and "|" in line:
                 parts = line.split("|", 2)
                 if len(parts) == 3:
-                    commits.append({
-                        "hash": parts[0],
-                        "subject": parts[1],
-                        "date": parts[2],
-                    })
+                    commits.append(
+                        {
+                            "hash": parts[0],
+                            "subject": parts[1],
+                            "date": parts[2],
+                        }
+                    )
         return commits
-    except (CliError, Exception):
-        return []
 
 
 @mcp.tool

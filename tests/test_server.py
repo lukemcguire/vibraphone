@@ -55,3 +55,24 @@ def test_entry_point_module_runnable():
     assert "OK" in result.stdout
     assert "ImportError" not in result.stderr
     assert "ModuleNotFoundError" not in result.stderr
+
+
+def test_task_tools_registered():
+    """Verify all 6 task tools are registered with MCP server."""
+    from vibraphone.server import mcp
+
+    # Get registered tool names
+    tools = list(mcp._tool_manager._tools.keys())
+
+    expected_tools = [
+        "ping",  # from Phase 1
+        "list_tasks",
+        "next_ready",
+        "health_check",
+        "complete_task",
+        "abandon_task",
+        "get_task_context",
+    ]
+
+    for tool_name in expected_tools:
+        assert tool_name in tools, f"Tool '{tool_name}' not registered"
