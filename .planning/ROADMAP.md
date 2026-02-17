@@ -104,10 +104,13 @@ Plans:
   3. Agent can call request_code_review and LLM review completes with approval/rejection
   4. Agent cannot call attempt_commit successfully without prior approved review
   5. Circuit breaker escalates to human after configured max_attempts exceeded
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD
+- [ ] 05-01-PLAN.md — Create quality gate foundation (command_runner, circuit_breaker, quality_state)
+- [ ] 05-02-PLAN.md — Extend config and create code_reviewer with instructor + OpenRouter
+- [ ] 05-03-PLAN.md — Implement all 5 quality gate MCP tools (run_tests, run_lint, run_format, request_code_review, attempt_commit)
+- [ ] 05-04-PLAN.md — Create unit tests and Phase 5 success criteria verification
 
 ### Phase 6: Bridge & Stack Tools
 **Goal**: Agent integrates with GSD and configures stack
@@ -162,8 +165,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 1. Package Foundation | 0/3 | Not started | - |
 | 2. Configuration & Core Utilities | 0/3 | Not started | - |
 | 3. Task Management Tools | 0/5 | Not started | - |
-| 4. Worktree & Session Tools | 0/TBD | Complete    | 2026-02-17 |
-| 5. Quality Gate Tools | 0/TBD | Not started | - |
+| 4. Worktree & Session Tools | 0/4 | Complete    | 2026-02-17 |
+| 5. Quality Gate Tools | 0/4 | Not started | - |
 | 6. Bridge & Stack Tools | 0/TBD | Not started | - |
 | 7. Scaffolding & Templates | 0/TBD | Not started | - |
 | 8. Testing & Documentation | 0/TBD | Not started | - |
