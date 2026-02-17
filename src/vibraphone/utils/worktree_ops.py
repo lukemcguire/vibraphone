@@ -186,3 +186,59 @@ async def rebase_onto_main(worktree_path: Path, branch_name: str) -> dict:
         suggested_action="Resolve conflicts manually, then retry merge_task",
         conflicted_files=conflicted_files,
     )
+
+
+async def check_uncommitted_changes(worktree_path: Path) -> list[str]:
+    """Check for uncommitted changes in worktree.
+
+    Runs git status --porcelain and parses output to get list of
+    changed files. Each line in output is "XY filename" format.
+
+    Args:
+        worktree_path: Path to the worktree to check
+
+    Returns:
+        List of changed filenames (empty if clean)
+    """
+    process = await asyncio.create_subprocess_exec(
+        "git",
+        "status",
+        "--porcelain",
+        cwd=worktree_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await process.communicate()
+
+    lines = stdout.decode().strip().split("\n")
+    # Each line is "XY filename" - extract filename starting at position 3
+    return [line[3:] for line in lines if line]
+
+
+async def check_branch_merged(branch_name: str, project_root: Path) -> bool:
+    """Check if branch is merged into main.
+
+    Runs git branch --merged main --list to check if the branch
+    appears in the list of branches merged into main.
+
+    Args:
+        branch_name: Name of the branch to check
+        project_root: Main repository root
+
+    Returns:
+        True if branch is merged into main, False otherwise
+    """
+    process = await asyncio.create_subprocess_exec(
+        "git",
+        "branch",
+        "--merged",
+        "main",
+        "--list",
+        branch_name,
+        cwd=project_root,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await process.communicate()
+
+    return bool(stdout.decode().strip())
