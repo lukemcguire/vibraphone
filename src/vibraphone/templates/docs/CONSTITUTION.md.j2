@@ -1,0 +1,266 @@
+# CONSTITUTION.md — Project Law
+
+The immutable rules the code reviewer checks against. Each rule has a
+machine-readable ID that the reviewer references in its JSON output.
+
+---
+
+## Naming Conventions
+
+### `snake-case-files`
+
+All file names use snake_case{% if language == "go" %}, following Go convention. No camelCase, PascalCase, or kebab-case in file names{% elif language == "python" %}, following PEP 8. No camelCase or kebab-case in file names{% elif language == "typescript" %}, following TypeScript convention. No kebab-case in file names{% else %}{% endif %}.
+
+{% if language == "python" %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`). Use snake_case for functions/variables, PascalCase for classes.
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% elif language == "go" %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`) and receiver names. Exported names use PascalCase, unexported use camelCase, per Go convention.
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% elif language == "typescript" %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`). Use camelCase for functions/variables, PascalCase for classes/types/interfaces.
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% elif language == "rust" %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`). Use snake_case for functions/variables, PascalCase for types/traits.
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% elif language == "ruby" %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`). Use snake_case for methods/variables, PascalCase for classes/modules.
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% elif language == "java" %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`). Use camelCase for methods/variables, PascalCase for classes.
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% else %}
+### `descriptive-names`
+
+Variables, functions, and types must have descriptive names. No single-letter variables except loop counters (`i`, `j`, `k`).
+
+### `branch-prefix`
+
+Git branches must follow the pattern `feat/<task-id>`.
+{% endif %}
+
+---
+
+## Architectural Boundaries
+
+### `single-responsibility`
+
+Each module, function, or class should have a single responsibility. If a function does two things, split it.
+
+{% if language == "python" %}
+### `no-circular-imports`
+
+Python modules must not form import cycles. Structure packages so dependencies flow in one direction.
+{% elif language == "go" %}
+### `no-circular-imports`
+
+Go packages must not form import cycles. Structure packages so dependencies flow in one direction.
+{% elif language == "typescript" %}
+### `no-circular-imports`
+
+TypeScript modules must not form import cycles. Structure packages so dependencies flow in one direction.
+{% elif language == "rust" %}
+### `no-circular-imports`
+
+Rust crates must not form dependency cycles. Structure packages so dependencies flow in one direction.
+{% endif %}
+
+---
+
+## Forbidden Patterns
+
+### `no-hardcoded-secrets`
+
+No secrets, API keys, passwords, or tokens hardcoded in source files. All secrets must come from environment variables.
+
+{% if language == "go" %}
+### `no-naked-goroutines`
+
+Goroutines must have proper error handling and lifecycle management. Use `errgroup`, context cancellation, or similar patterns. No fire-and-forget goroutines without recovery.
+
+### `no-init-functions`
+
+Avoid `init()` functions. Use explicit initialization so dependencies and side effects are visible at the call site.
+
+### `no-panic-in-library-code`
+
+Library packages must not call `panic()`. Return errors and let the caller decide how to handle them. `main` and test code may panic.
+{% elif language == "python" %}
+### `no-bare-except`
+
+Do not use bare `except:` clauses. Always specify the exception type or use `except Exception:` with explicit handling.
+
+### `no-mutable-default-args`
+
+Never use mutable objects (lists, dicts, sets) as default argument values. Use `None` and create the object inside the function.
+{% elif language == "typescript" %}
+### `no-any-type`
+
+Avoid `any` type. Use `unknown` for truly unknown types and narrow with type guards.
+
+### `no-explicit-any`
+
+Do not use `any` as a type annotation. If the type is truly unknown, use `unknown` and narrow it.
+{% elif language == "rust" %}
+### `no-unwrap-in-library-code`
+
+Library code must not use `.unwrap()` or `.expect()` on Option or Result. Use proper error handling with `?` operator or match expressions.
+
+### `no-panic-in-library-code`
+
+Library crates must not panic. Return Result types and let the caller decide how to handle errors.
+{% endif %}
+
+---
+
+## Required Patterns
+
+{% if language == "python" %}
+### `require-type-hints`
+
+All public functions must have type hints for parameters and return values.
+
+### `require-docstrings`
+
+All public modules, classes, and functions must have docstrings following Google style.
+{% elif language == "go" %}
+### `require-error-wrapping`
+
+Wrap errors with context using `fmt.Errorf("context: %w", err)`. Do not discard or swallow errors silently.
+
+### `require-doc-comments`
+
+All exported functions, types, and package declarations must have doc comments following Go convention (`// FunctionName does...`).
+
+### `require-error-handling`
+
+All external calls (HTTP, file I/O, subprocess) must have explicit error handling. No ignored error return values.
+{% elif language == "typescript" %}
+### `require-return-types`
+
+All public functions must have explicit return type annotations.
+
+### `require-jsdoc`
+
+All exported functions and classes must have JSDoc comments.
+{% elif language == "rust" %}
+### `require-documentation`
+
+All public items (functions, structs, enums, traits) must have documentation comments (`///` style).
+
+### `require-error-handling`
+
+All fallible operations must return `Result` and propagate errors with `?` operator.
+{% elif language == "ruby" %}
+### `require-documentation`
+
+All public methods must have YARD documentation comments.
+
+### `require-frozen-strings`
+
+Add `# frozen_string_literal: true` at the top of all Ruby files.
+{% elif language == "java" %}
+### `require-javadoc`
+
+All public classes and methods must have Javadoc comments.
+
+### `require-exception-handling`
+
+All checked exceptions must be properly caught or declared.
+{% else %}
+### `require-documentation`
+
+All public functions and types must have documentation comments.
+{% endif %}
+
+---
+
+## Dependency Rules
+
+### `require-adr-for-new-deps`
+
+No new dependencies may be added without a corresponding ADR entry in `docs/DECISIONS.md` explaining the choice.
+
+### `no-duplicate-deps`
+
+Do not add a dependency that duplicates functionality already provided by an existing dependency or the standard library.
+
+---
+
+## Test Requirements
+
+### `require-tests-for-public-functions`
+
+Every exported function must have at least one test.
+
+### `require-test-before-code`
+
+Follow TDD: write a failing test before writing the implementation.
+
+### `no-skipped-tests`
+
+{% if language == "python" %}
+No `@pytest.skip()` or `pytest.mark.skip` in committed test files without an accompanying issue ID explaining why.
+{% elif language == "go" %}
+No `t.Skip()` in committed test files without an accompanying issue ID explaining why.
+{% elif language == "typescript" %}
+No `.skip()` or `.only()` on test cases without an accompanying issue ID explaining why.
+{% elif language == "rust" %}
+No `#[ignore]` on test functions without an accompanying issue ID explaining why.
+{% elif language == "ruby" %}
+No `skip` in RSpec tests without an accompanying issue ID explaining why.
+{% elif language == "java" %}
+No `@Disabled` on test methods without an accompanying issue ID explaining why.
+{% else %}
+No skipped tests in committed test files without an accompanying issue ID explaining why.
+{% endif %}
+
+---
+
+## Security Checklist
+
+### `no-secrets-in-code`
+
+No secrets, credentials, or API keys in source code. Use `.env` and environment variables.
+
+---
+
+## Diagram Requirements
+
+### `require-diagram-update`
+
+New packages, services, or significant architectural changes must include updated Mermaid diagrams in `docs/ARCHITECTURE.md`.
+
+### `diagram-matches-code`
+
+Mermaid diagrams in ARCHITECTURE.md must accurately reflect the current codebase. Stale diagrams are treated as warnings.
