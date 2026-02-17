@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 7 of 8 (Scaffolding & Templates)
-Current Plan: 4 of 5 in current phase
+Current Plan: 5 of 5 in current phase
 Total Plans in Phase: 5
-Status: In progress - Template loader utility complete
-Last activity: 2026-02-17 — Completed 07-03 Template Loader
+Status: In progress - init_project MCP tool complete
+Last activity: 2026-02-17 — Completed 07-04 init_project Tool
 
-Progress: [██████████] 80%
+Progress: [███████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 3.0 min
-- Total execution time: 1.12 hours
+- Total execution time: 1.15 hours
 
 **By Phase:**
 
@@ -55,6 +55,7 @@ Progress: [██████████] 80%
 | Phase 07 P01 | 5min | 2 tasks | 12 files |
 | Phase 07 P02 | 2min | 2 tasks | 3 files |
 | Phase 07 P03 | 2min | 1 task | 2 files |
+| Phase 07 P04 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,9 @@ Recent decisions affecting current work:
 - [Phase 07-02]: Platform detection via platform.system() returning Darwin/Linux/Windows
 - [Phase 07-03]: Template loader uses importlib.resources.files() for wheel-compatible resource access
 - [Phase 07-03]: Filter __pycache__ with 'in' check (not endswith) to catch nested paths
+- [Phase 07-04]: init_project uses two-phase preview/apply flow with per-file conflict handling
+- [Phase 07-04]: Non-conflicting files written immediately, conflicts returned with unified diffs for user decision
+- [Phase 07-04]: Auto-detection from project files (git config, package files, CI configs) for sensible defaults
 
 ### Pending Todos
 
@@ -132,10 +136,10 @@ None yet.
 
 - **Phase 1**: ~~FastMCP entry point pattern needs verification~~ — Resolved: use FastMCP docs pattern
 - **Phase 3**: Session recovery has known bug — may need debugging during migration
-- **Phase 7**: init_project file merging strategy needs careful design to avoid overwriting user files
+- **Phase 7**: ~~init_project file merging strategy needs careful design to avoid overwriting user files~~ — Resolved: Two-phase preview/apply flow with per-file conflict prompts and unified diffs
 
 ## Session Continuity
 
-Last session: 2026-02-17 — Completed 07-03 Template Loader
-Stopped at: Plan 07-04 next (init_project tool implementation)
-Resume file: .planning/phases/07-scaffolding-templates/07-03-SUMMARY.md
+Last session: 2026-02-17 — Completed 07-04 init_project Tool
+Stopped at: Plan 07-05 next (final plan of phase)
+Resume file: .planning/phases/07-scaffolding-templates/07-04-SUMMARY.md
