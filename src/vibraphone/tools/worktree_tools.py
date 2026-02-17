@@ -8,9 +8,9 @@ import asyncio
 from datetime import datetime
 from pathlib import Path
 
-from vibraphone.config import get_config
+from vibraphone.config import get_config, get_project_root
 from vibraphone.server import mcp
-from vibraphone.tools.task_tools import TaskError, get_project_root
+from vibraphone.utils.errors import TaskError
 from vibraphone.utils.session import SessionManager, SessionState
 from vibraphone.utils.worktree_ops import (
     WorktreeError,

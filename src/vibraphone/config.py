@@ -233,3 +233,18 @@ def clear_config_cache() -> None:
     global _config, _config_path
     _config = None
     _config_path = None
+
+
+def get_project_root() -> Path:
+    """Get project root directory.
+
+    Returns the directory containing vibraphone.yaml or the current working
+    directory if no config file is found.
+
+    Returns:
+        Path to project root directory.
+    """
+    config_path = find_config_file()
+    if config_path is not None:
+        return config_path.parent
+    return Path.cwd()
