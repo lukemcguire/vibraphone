@@ -1,4 +1,5 @@
-"""Utilities package for vibraphone MCP server.
+"""Utilities package for vibraphone MCP server."""
 
-This package contains utility functions that will be added in Phase 2+.
-"""
+from vibraphone.utils.cli_runner import CliError, run_cli
+
+__all__ = ["CliError", "run_cli"]
