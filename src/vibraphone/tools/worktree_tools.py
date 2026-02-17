@@ -189,3 +189,48 @@ async def cleanup_task(task_id: str) -> dict:
             "Task is complete - mark it complete with complete_task",
         ],
     }
+
+
+@mcp.tool
+async def recover_session() -> dict:
+    """Check for stale session and return state.
+
+    Returns session info if active session exists, or message if none.
+    Use this after server startup to resume interrupted work.
+
+    Returns:
+        Dict with session info, message, and next_steps if session found,
+        or session=None with message if no session or stale session detected.
+    """
+    project_root = get_project_root()
+    session = SessionManager(project_root)
+    state = session.load()
+
+    if not state:
+        return {
+            "session": None,
+            "message": "No active session found",
+        }
+
+    # Check if worktree still exists
+    if not state.worktree_path.exists():
+        return {
+            "session": None,
+            "message": f"Stale session for task {state.task_id} - worktree no longer exists",
+            "suggested_action": "Run cleanup_task to clear session, or start_task to begin fresh",
+        }
+
+    # Valid session found
+    return {
+        "session": {
+            "task_id": state.task_id,
+            "worktree_path": str(state.worktree_path),
+            "branch_name": state.branch_name,
+            "started_at": state.started_at.isoformat(),
+        },
+        "message": f"Session found for task {state.task_id}",
+        "next_steps": [
+            f"Continue work: cd {state.worktree_path}",
+            f"Or clean up: cleanup_task {state.task_id}",
+        ],
+    }
