@@ -86,10 +86,13 @@ Plans:
   3. Agent can call cleanup_task and worktree directory is removed with branch deleted
   4. Server startup automatically calls session recovery when vibraphone.yaml exists
   5. Session state persists to .vibraphone/session.json after every session operation
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD
+- [ ] 04-01-PLAN.md — Create session state persistence layer (SessionState model, SessionManager class)
+- [ ] 04-02-PLAN.md — Create worktree utility functions for git operations with safety guards
+- [ ] 04-03-PLAN.md — Create MCP tools for worktree lifecycle management
+- [ ] 04-04-PLAN.md — Add server startup integration and comprehensive unit tests
 
 ### Phase 5: Quality Gate Tools
 **Goal**: All quality gates enforce review-before-commit
