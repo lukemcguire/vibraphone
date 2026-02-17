@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Package Foundation** - Package installable with server entry point
 - [ ] **Phase 2: Configuration & Core Utilities** - Config loading and shared utilities work
 - [ ] **Phase 3: Task Management Tools** - Agent can manage tasks via beads_rust
-- [ ] **Phase 4: Worktree & Session Tools** - Agent works in isolated branches with session recovery
+- [x] **Phase 4: Worktree & Session Tools** - Agent works in isolated branches with session recovery (completed 2026-02-17)
 - [ ] **Phase 5: Quality Gate Tools** - All quality gates enforce review-before-commit
 - [ ] **Phase 6: Bridge & Stack Tools** - Agent integrates with GSD and configures stack
 - [ ] **Phase 7: Scaffolding & Templates** - Agent scaffolds vibraphone into any project
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 1. Package Foundation | 0/3 | Not started | - |
 | 2. Configuration & Core Utilities | 0/3 | Not started | - |
 | 3. Task Management Tools | 0/5 | Not started | - |
-| 4. Worktree & Session Tools | 0/TBD | Not started | - |
+| 4. Worktree & Session Tools | 0/TBD | Complete    | 2026-02-17 |
 | 5. Quality Gate Tools | 0/TBD | Not started | - |
 | 6. Bridge & Stack Tools | 0/TBD | Not started | - |
 | 7. Scaffolding & Templates | 0/TBD | Not started | - |
