@@ -24,6 +24,23 @@ from vibraphone.utils.quality_state import QualityGateState
 class TestPhase5SuccessCriteria:
     """Verify all Phase 5 requirements from ROADMAP.md."""
 
+    def _mock_execution_context(self, mocker: Any, tmp_path: Path, session: Any = None) -> Any:
+        """Helper to mock get_execution_context with proper tuple return.
+
+        Args:
+            mocker: pytest-mock mocker fixture.
+            tmp_path: Path to use as execution directory.
+            session: Optional session state (None for no-session cases).
+
+        Returns:
+            The mock object for further configuration if needed.
+        """
+        mock = mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_execution_context",
+        )
+        mock.return_value = (tmp_path, session)
+        return mock
+
     @pytest.mark.asyncio
     async def test_QUAL_01_run_tests_with_circuit_breaker(
         self, mocker: Any, tmp_path: Path
@@ -42,10 +59,7 @@ class TestPhase5SuccessCriteria:
         assert hasattr(run_tests, "fn")
 
         # Setup mocks
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_execution_context",
-            return_value=(tmp_path, None),
-        )
+        self._mock_execution_context(mocker, tmp_path)
         mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
             new_callable=AsyncMock,
@@ -88,10 +102,7 @@ class TestPhase5SuccessCriteria:
         assert hasattr(run_lint, "fn")
 
         # Setup mocks
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_execution_context",
-            return_value=(tmp_path, None),
-        )
+        self._mock_execution_context(mocker, tmp_path)
         mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
             new_callable=AsyncMock,
@@ -122,10 +133,7 @@ class TestPhase5SuccessCriteria:
         assert hasattr(run_format, "fn")
 
         # Setup mocks
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_execution_context",
-            return_value=(tmp_path, None),
-        )
+        self._mock_execution_context(mocker, tmp_path)
         mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
             new_callable=AsyncMock,
@@ -163,10 +171,7 @@ class TestPhase5SuccessCriteria:
         assert is_dangerous_file("id_rsa") is True
 
         # Setup mocks for APPROVED case
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_execution_context",
-            return_value=(tmp_path, None),
-        )
+        self._mock_execution_context(mocker, tmp_path)
 
         mock_config = MagicMock()
         mock_config.circuit_breakers.review.max_attempts = 5
@@ -222,10 +227,7 @@ class TestPhase5SuccessCriteria:
         assert hasattr(attempt_commit, "fn")
 
         # Setup mocks
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_execution_context",
-            return_value=(tmp_path, None),
-        )
+        self._mock_execution_context(mocker, tmp_path)
 
         # Test 1: No approved review
         mock_state_manager_class = mocker.patch(
@@ -329,10 +331,7 @@ class TestPhase5SuccessCriteria:
         """QUAL-06: Verify circuit breakers work in actual tools."""
         from vibraphone.tools.quality_gate_tools import run_tests
 
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_execution_context",
-            return_value=(tmp_path, None),
-        )
+        self._mock_execution_context(mocker, tmp_path)
 
         # Config with low threshold
         mock_config = MagicMock()
