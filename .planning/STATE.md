@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Every code change goes through the quality gate (tests, lint, review) before it can be committed — enforced by tooling, not by prompting.
-**Current focus:** Phase 6 - Bridge & Stack Tools
+**Current focus:** Phase 7 - Scaffolding & Templates
 
 ## Current Position
 
-Phase: 6 of 8 (Bridge & Stack Tools)
-Current Plan: 4 of 4 in current phase
-Total Plans in Phase: 4
-Status: Phase complete - All bridge and stack tools with test coverage
-Last activity: 2026-02-17 — Completed 06-04 Bridge & Stack Tool Tests
+Phase: 7 of 8 (Scaffolding & Templates)
+Current Plan: 2 of 5 in current phase
+Total Plans in Phase: 5
+Status: In progress - Prerequisites utility complete
+Last activity: 2026-02-17 — Completed 07-02 Prerequisites Utility
 
-Progress: [████████░░] 100%
+Progress: [█████████░] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
-- Average duration: 3.1 min
-- Total execution time: 1.05 hours
+- Total plans completed: 22
+- Average duration: 3.0 min
+- Total execution time: 1.08 hours
 
 **By Phase:**
 
@@ -52,6 +52,8 @@ Progress: [████████░░] 100%
 | Phase 06 P02 | 4min | 2 tasks | 2 files |
 | Phase 06 P03 | 2min | 2 tasks | 2 files |
 | Phase 06 P04 | 4min | 3 tasks | 3 files |
+| Phase 07 P01 | 2min | 2 tasks | 3 files |
+| Phase 07 P02 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -114,6 +116,10 @@ Recent decisions affecting current work:
 - [Phase 06-bridge-stack-tools]: Tasks parallel by default - only explicit <blocked_by> creates intra-plan deps
 - [Phase 06-04]: Test class organization follows tool-based pattern, success criteria tests named by ROADMAP ID
 - [Phase 06-04]: Critical test verifies no implicit sequential dependencies for import_gsd_plan
+- [Phase 07-01]: Template files bundled in Python wheel via hatchling artifacts config
+- [Phase 07-02]: Prerequisite detection uses stdlib only (platform, shutil, dataclasses)
+- [Phase 07-02]: Core dependencies (br, bv, git) distinguished from optional (just, node) in missing_core field
+- [Phase 07-02]: Platform detection via platform.system() returning Darwin/Linux/Windows
 
 ### Pending Todos
 
@@ -127,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-17 — Gathered Phase 7 context
-Stopped at: Phase 7 context captured, ready for planning
-Resume file: .planning/phases/07-scaffolding-templates/07-CONTEXT.md
+Last session: 2026-02-17 — Completed 07-02 Prerequisites Utility
+Stopped at: Plan 07-03 next (init_project core implementation)
+Resume file: .planning/phases/07-scaffolding-templates/07-02-SUMMARY.md
