@@ -42,6 +42,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-18 — Roadmap created
-Stopped at: Awaiting roadmap approval
-Resume file: .planning/ROADMAP.md
+Last session: 2026-02-18 — Phase 10 context gathered
+Stopped at: Ready to plan Phase 10
+Resume file: .planning/phases/10-command-infrastructure/10-CONTEXT.md
