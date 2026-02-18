@@ -6,18 +6,28 @@
 [![CI](https://github.com/lukemcguire/vibraphone/actions/workflows/ci.yml/badge.svg)](https://github.com/lukemcguire/vibraphone/actions)
 [![Coverage](https://codecov.io/gh/lukemcguire/vibraphone/branch/main/graph/badge.svg)](https://codecov.io/gh/lukemcguire/vibraphone)
 
-Vibraphone is an MCP (Model Context Protocol) server that enforces test-driven development and code review for AI coding agents. It works with any MCP-compatible agent (Claude, Cursor, Windsurf, etc.) to ensure code quality through tooling rather than prompting.
+Vibraphone is an MCP (Model Context Protocol) server that enforces test-driven
+development and code review for AI coding agents. It works with any
+MCP-compatible agent (Claude, Cursor, Windsurf, etc.) to ensure code quality
+through tooling rather than prompting.
 
 ## Why Vibraphone
 
-AI coding agents are productive but undisciplined. They skip tests, ignore lint failures, and commit without review. Prompting them to be careful works temporarily, but agents forget as context fills and quality gates slip.
+AI coding agents are productive but undisciplined. They skip tests, ignore lint
+failures, and commit without review. Prompting them to be careful works
+temporarily, but agents forget as context fills and quality gates slip.
 
 Vibraphone enforces quality gates through tooling:
 
-- **Quality Gates**: Tests, lint, and LLM-powered code review must pass before any commit. The `attempt_commit` tool refuses to commit until `request_code_review` returns APPROVED.
-- **Worktree Isolation**: Each task gets its own git worktree on a feature branch. Your main working directory stays clean.
-- **Session Recovery**: If an agent session is interrupted, the next session can resume exactly where it left off.
-- **Circuit Breakers**: After repeated failures on the same task, Vibraphone escalates instead of looping forever.
+- **Quality Gates**: Tests, lint, and LLM-powered code review must pass before
+  any commit. The `attempt_commit` tool refuses to commit until
+  `request_code_review` returns APPROVED.
+- **Worktree Isolation**: Each task gets its own git worktree on a feature
+  branch. Your main working directory stays clean.
+- **Session Recovery**: If an agent session is interrupted, the next session can
+  resume exactly where it left off.
+- **Circuit Breakers**: After repeated failures on the same task, Vibraphone
+  escalates instead of looping forever.
 
 ## Installation
 
@@ -33,8 +43,10 @@ uv tool install vibraphone
 
 - Python 3.10+
 - Git
-- [beads_rust](https://github.com/lukemcguire/beads_rust) (`br` CLI) for task management
-- An OpenAI-compatible API key for code review (set `OPENAI_API_KEY` environment variable)
+- [beads_rust](https://github.com/lukemcguire/beads_rust) (`br` CLI) for task
+  management
+- An OpenAI-compatible API key for code review (set `OPENAI_API_KEY` environment
+  variable)
 
 ## Quickstart (5 minutes)
 
@@ -45,13 +57,15 @@ cd your-project
 vibraphone
 ```
 
-When your agent connects, it will have access to `init_project`. Call it to scaffold vibraphone files:
+When your agent connects, it will have access to `init_project`. Call it to
+scaffold vibraphone files:
 
 ```
 init_project()
 ```
 
 This creates:
+
 - `vibraphone.yaml` - Configuration file
 - `AGENTS.md` - Agent behavioral contract (your agent should read this)
 - `.mcp.json` - MCP server registration
@@ -90,7 +104,8 @@ Your agent can then use `next_ready()` to get the next available task.
 start_task(task_id="TASK-001")
 ```
 
-This creates a git worktree, checks out a feature branch, and loads context for the task.
+This creates a git worktree, checks out a feature branch, and loads context for
+the task.
 
 ### 4. Write code, verify quality
 
@@ -108,7 +123,8 @@ Follow the TDD loop:
 request_code_review(paths=["src/my_feature.py"], stage_all=True)
 ```
 
-This stages your changes and runs an LLM-powered review against your CONSTITUTION.md. If issues are found, fix them and retry.
+This stages your changes and runs an LLM-powered review against your
+CONSTITUTION.md. If issues are found, fix them and retry.
 
 Once APPROVED:
 
@@ -124,7 +140,8 @@ cleanup_task(task_id="TASK-001")
 complete_task(task_id="TASK-001")
 ```
 
-Your feature is now merged to main, the worktree is removed, and the branch is deleted.
+Your feature is now merged to main, the worktree is removed, and the branch is
+deleted.
 
 ## How It Works
 
@@ -155,7 +172,9 @@ flowchart TB
     end
 ```
 
-The quality gate tools (`run_tests`, `run_lint`, `run_format`) can be called at any time during development. `attempt_commit` only succeeds after `request_code_review` returns APPROVED.
+The quality gate tools (`run_tests`, `run_lint`, `run_format`) can be called at
+any time during development. `attempt_commit` only succeeds after
+`request_code_review` returns APPROVED.
 
 ## Workflow Examples
 
@@ -189,7 +208,8 @@ The quality gate tools (`run_tests`, `run_lint`, `run_format`) can be called at 
 6. attempt_commit(message="fix: add error handling and validation")
 ```
 
-After `max_review_attempts` rejections, the tool returns ESCALATED. The agent should then block the task and move on.
+After `max_review_attempts` rejections, the tool returns ESCALATED. The agent
+should then block the task and move on.
 
 ### Example 3: Session Recovery After Interruption
 
@@ -200,21 +220,24 @@ After `max_review_attempts` rejections, the tool returns ESCALATED. The agent sh
 3. # Continue where you left off
 ```
 
-If the session was stale (task no longer in progress), recovery cleans up automatically.
+If the session was stale (task no longer in progress), recovery cleans up
+automatically.
 
 ## Generated Files
 
 When you run `init_project()`, Vibraphone scaffolds these files:
 
-| File | Purpose |
-|------|---------|
-| `vibraphone.yaml` | Configuration for quality gates, worktrees, and review |
-| `AGENTS.md` | Behavioral contract for AI agents (workflow state machine) |
-| `.mcp.json` | MCP server registration for your agent |
-| `docs/CONSTITUTION.md` | Coding conventions checked during code review |
+| File                   | Purpose                                                       |
+| ---------------------- | ------------------------------------------------------------- |
+| `vibraphone.yaml`      | Configuration for quality gates, worktrees, and review        |
+| `AGENTS.md`            | Behavioral contract for AI agents (workflow state machine)    |
+| `.mcp.json`            | MCP server registration for your agent                        |
+| `docs/CONSTITUTION.md` | Coding conventions checked during code review                 |
 | `docs/ARCHITECTURE.md` | Mermaid diagrams maintained by agents as architecture evolves |
 
-The `ARCHITECTURE.md` file uses Mermaid diagrams to give agents a compressed understanding of your system. Agents are expected to update these diagrams when they change the architecture.
+The `ARCHITECTURE.md` file uses Mermaid diagrams to give agents a compressed
+understanding of your system. Agents are expected to update these diagrams when
+they change the architecture.
 
 ## Configuration
 
@@ -250,7 +273,8 @@ review:
   constitution_file: ./docs/CONSTITUTION.md
 ```
 
-See [docs/configuration.md](docs/configuration.md) for the full configuration reference.
+See [docs/configuration.md](docs/configuration.md) for the full configuration
+reference.
 
 ## Contributing
 
