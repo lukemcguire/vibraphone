@@ -74,7 +74,7 @@ Features that set product apart. Not expected, but valued.
 | **Integration Depth** | | | | |
 | GSD planning bridge | Import GSD plans into task system | Medium | `import_gsd_plan` tool (existing) | npx @lukemcguire/get-shit-done wrapper |
 | Justfile recipe generation | Integrate with existing task runners | Low | `init_project` generates recipes | test, lint, format recipes |
-| Git worktree-aware tools | All tools understand worktree context | High | Worktree path tracking in session | `start_task` creates, tools operate in it, `cleanup_task` removes |
+| Git worktree-aware tools | All tools understand worktree context | High | Worktree path tracking in session | `start_task` creates, tools operates in it, `cleanup_task` removes |
 | **Governance as Code** | | | | |
 | CONSTITUTION.md enforcement | Code review checks against project rules | High | LLM review with CONSTITUTION context | Not just lint rules — architectural principles |
 | Architecture diagram generation | Living architecture docs | Medium | Mermaid templates in ARCHITECTURE.md | Scaffold template, user maintains |
@@ -235,3 +235,200 @@ Add differentiators that improve DX:
 - Review FastMCP documentation for latest best practices
 - Check uv documentation for `uv tool install` requirements and conventions
 - Test cross-platform behavior early (macOS, Windows/WSL2) to avoid late surprises
+
+---
+
+# Slash Command Features (v1.1 Milestone)
+
+**Domain:** Claude Code slash commands for vibraphone MCP tools
+**Researched:** 2026-02-18
+**Confidence:** HIGH
+
+## Table Stakes (Slash Commands)
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| `$ARGUMENTS` placeholder | All arguments in one string | LOW | Basic substitution |
+| Positional args `$1`, `$2` | Access specific args individually | LOW | Shell-like syntax |
+| `--flag` parsing | Commands commonly use flags | MEDIUM | Must be parsed from $ARGUMENTS |
+| YAML frontmatter | Metadata in command file | LOW | description, allowed-tools, etc |
+| `argument-hint` | Shows expected args in autocomplete | LOW | Documentation/help UX |
+| File references (`@path`) | Include file contents | LOW | Works in command body |
+| `allowed-tools` restriction | Security/scoping | LOW | Inherit or restrict |
+
+## Differentiators (Slash Commands)
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| AskUserQuestion integration | Interactive command flows | MEDIUM | Multi-select, options with descriptions |
+| Multi-stage workflows | Conditional logic, branching | MEDIUM | Step-by-step wizards |
+| Subagent spawning (Task tool) | Delegate to specialized agents | HIGH | Parallel execution possible |
+| Model selection (`model:`) | Speed vs quality tradeoffs | LOW | haiku/sonnet/opus |
+
+## Anti-Features (Slash Commands)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Dict/list argument passing | Complex MCP tool params | All args become strings — no structured types | Use AskUserQuestion for complex input |
+| JSON argument parsing | Pass structured data | Claude stringifies objects | Design commands to take primitive args |
+| Validation in frontmatter | Catch bad input early | No built-in validation | Validate in command using conditionals |
+
+## The Stringification Problem
+
+**Critical finding:** Claude Code slash commands receive ALL arguments as strings. Even when you type what looks like a dict or list, it gets stringified.
+
+### What happens
+
+```text
+/v:configure-stack {"backend": {"language": "python"}}
+```
+
+The command receives `$ARGUMENTS` as the literal string:
+```
+{"backend": {"language": "python"}}
+```
+
+NOT a parsed object. This is a string that happens to contain JSON.
+
+### Why this matters for vibraphone
+
+The MCP tools like `configure_stack(components: dict, ...)` expect actual Python dicts. If a slash command passes a stringified JSON, the tool would receive a string, not a dict.
+
+### Solutions
+
+1. **Avoid complex args in slash commands** — Design commands to take simple positional args, then construct the dict inside the command body before calling MCP tool.
+
+2. **Use AskUserQuestion** — For complex multi-field input, use interactive questions rather than argument strings.
+
+3. **Call MCP tools directly** — For operations needing dict/list params, instruct users to call the MCP tool directly (not via slash command).
+
+## GSD Implementation Patterns
+
+### How GSD handles complex parameters
+
+GSD commands follow specific patterns to avoid the stringification problem:
+
+1. **Phase number as first arg:** Commands like `/gsd:execute-phase 6 --gaps-only` take a simple integer, then parse flags from remaining args.
+
+2. **Flags for optional behavior:** `--auto`, `--research`, `--skip-verify`, `--gaps-only` are parsed from `$ARGUMENTS` using bash/node scripts.
+
+3. **Complex config via AskUserQuestion:** Instead of passing dicts as args, GSD uses AskUserQuestion to gather structured input interactively.
+
+4. **File references for large data:** Context is loaded via `@.planning/ROADMAP.md` rather than passed as args.
+
+5. **Node scripts for heavy lifting:** The `gsd-tools.cjs` CLI handles validation, parsing, and JSON operations — commands invoke it via Bash.
+
+### Example: GSD execute-phase
+
+```markdown
+---
+name: gsd:execute-phase
+argument-hint: "<phase-number> [--gaps-only]"
+---
+
+Phase: $ARGUMENTS
+
+**Flags:**
+- `--gaps-only` — Execute only gap closure plans
+```
+
+The workflow then:
+1. Parses `$ARGUMENTS` to extract phase number and flags
+2. Uses `gsd-tools.cjs init execute-phase` to load context
+3. Validates and normalizes phase number
+4. Spawns subagents for execution
+
+## Applicable Patterns for Vibraphone
+
+### Pattern 1: Simple args + internal construction
+
+```markdown
+---
+argument-hint: "<phase-number>"
+---
+
+Import phase $1 into Beads tasks.
+
+First, validate the phase number, then call the import_gsd_plan MCP tool.
+```
+
+### Pattern 2: AskUserQuestion for complex input
+
+```markdown
+---
+allowed-tools: AskUserQuestion, mcp__vibraphone__configure_stack
+---
+
+Configure the project stack.
+
+Use AskUserQuestion to gather:
+- Component names (multi-select)
+- Language for each component
+- Test command patterns
+
+Then call configure_stack with the constructed dict.
+```
+
+### Pattern 3: Flag parsing via Bash
+
+```markdown
+---
+allowed-tools: Bash, mcp__vibraphone__*
+---
+
+Parse flags from $ARGUMENTS:
+!`echo "$ARGUMENTS" | grep -q -- "--preview" && echo "preview=true" || echo "preview=false"`
+```
+
+## MVP Recommendation (Slash Commands)
+
+### Launch With (v1)
+
+Minimum viable product — what's needed to validate the concept.
+
+- [ ] `/v init` — Initialize vibraphone in project (wraps `init_project` MCP tool)
+- [ ] `/v configure-stack` — Configure component stack (takes component names as simple args)
+- [ ] `/v import-plan` — Import GSD phase into tasks (takes phase number as simple arg)
+- [ ] Basic argument parsing (phase numbers, component names)
+- [ ] Help command showing available commands
+
+### Add After Validation (v1.x)
+
+Features to add once core is working.
+
+- [ ] `/v next` — Get next ready task (no args needed)
+- [ ] `/v list` — List tasks with optional filters
+- [ ] Interactive configuration via AskUserQuestion
+- [ ] Quality gate commands (lint, test, coverage)
+
+### Future Consideration (v2+)
+
+Features to defer until product-market fit is established.
+
+- [ ] Complex multi-stage workflows
+- [ ] Subagent spawning for parallel operations
+- [ ] Integration with GSD-style planning workflow
+
+## Prioritization Matrix (Slash Commands)
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| `/v init` | HIGH | LOW | P1 |
+| `/v configure-stack` | HIGH | MEDIUM | P1 |
+| `/v import-plan` | HIGH | LOW | P1 |
+| `/v next` | MEDIUM | LOW | P2 |
+| `/v list` | MEDIUM | LOW | P2 |
+| AskUserQuestion flows | MEDIUM | MEDIUM | P2 |
+| Multi-stage workflows | LOW | HIGH | P3 |
+
+## Sources (Slash Commands)
+
+- Anthropic slash commands documentation: https://docs.anthropic.com/en/docs/claude-code/slash-commands
+- GSD command implementations: `~/.claude/commands/gsd/*.md`
+- GSD workflows: `~/.claude/get-shit-done/workflows/*.md`
+- Official plugin command examples: `~/.claude/plugins/marketplaces/claude-plugins-official/plugins/*/commands/*.md`
+- Plugin-dev skill documentation: `~/.claude/plugins/marketplaces/claude-plugins-official/plugins/plugin-dev/skills/command-development/`
+
+---
+*Feature research for: Claude Code slash commands*
+*Researched: 2026-02-18*

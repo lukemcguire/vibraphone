@@ -1,8 +1,8 @@
 # Technology Stack
 
 **Project:** Vibraphone MCP Server
-**Researched:** 2026-02-16
-**Confidence:** MEDIUM (verification limited - no web access for current docs)
+**Researched:** 2026-02-18 (updated with slash commands research)
+**Confidence:** HIGH (verified against official Anthropic documentation)
 
 ## Executive Summary
 
@@ -15,65 +15,230 @@ For a Python MCP server distributed via `uv tool install`, the standard 2025/202
 - **Ruff** for linting/formatting (replacing black, flake8, isort)
 - **pytest** for testing
 
-The stack prioritizes modern Python packaging standards (PEP 621, PEP 517/518), developer experience via uv tooling, and minimal dependency bloat.
+For slash commands, the project uses **Agent Skills** (SKILL.md format) installed via `vibraphone-cli skill install` to `~/.claude/skills/v/`.
 
 ---
 
-## Recommended Stack
+## Slash Commands / Skills Stack
+
+### Core Technologies
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Agent Skills | Claude Code 1.0+ | Model-invoked capabilities packaged as SKILL.md | Official mechanism for packaging slash commands; Claude autonomously discovers and invokes based on description |
+| SKILL.md format | YAML frontmatter + Markdown | Skill definition file | Standard format for Claude Code skills; supports frontmatter for metadata and Markdown for instructions |
+| Python 3.13+ | 3.13 | Package bundling and CLI | Already used by vibraphone; shutil/importlib.resources for bundling |
+| importlib.resources | stdlib | Access bundled skill files from wheel | Clean access to package data without path hacks; works for both dev and installed packages |
+
+### Supporting Libraries
+
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| shutil | stdlib | Copy skill directories during installation | In CLI `skill install` command to copy bundled skill to ~/.claude/skills/ |
+| argparse | stdlib | CLI argument parsing | Already used in vibraphone-cli for subcommands |
+| pathlib | stdlib | Path manipulation | Cross-platform path handling for skill locations |
+
+### Installation Locations
+
+| Location | Type | Purpose |
+|----------|------|---------|
+| `~/.claude/skills/v/` | Personal Skill | User-level skill installation (current approach) |
+| `.claude/skills/v/` | Project Skill | Team-shared skills (checked into git) |
+| `src/vibraphone/skills/v/` | Bundled Skill | Packaged within vibraphone wheel for distribution |
+
+## How Claude Code Discovers and Loads Skills
+
+### Discovery Process
+
+1. **Automatic Discovery**: Claude Code automatically discovers skills from three sources at startup:
+   - Personal Skills: `~/.claude/skills/*/SKILL.md`
+   - Project Skills: `.claude/skills/*/SKILL.md`
+   - Plugin Skills: Bundled with installed plugins
+
+2. **Invocation Model**: Skills are **model-invoked** (not user-invoked like slash commands):
+   - Claude autonomously decides when to use a skill based on:
+     - User request context
+     - Skill's `description` field (critical for discovery)
+   - User does NOT type `/skill-name` to invoke
+
+3. **Contrast with Slash Commands**:
+   - Slash commands: User types `/command-name` explicitly
+   - Skills: Claude activates automatically when description matches context
+
+### SKILL.md File Format
+
+```markdown
+---
+name: skill-name
+description: Brief description of what this skill does and when to use it.
+allowed-tools: Read, Grep, Glob  # Optional: restrict available tools
+---
+
+# Skill Title
+
+Instructions for Claude in Markdown format.
+
+## Examples
+...
+```
+
+**Frontmatter Fields:**
+
+| Field | Required | Max Length | Format |
+|-------|----------|------------|--------|
+| `name` | Yes | 64 chars | lowercase, numbers, hyphens only |
+| `description` | Yes | 1024 chars | Include both what and when |
+| `allowed-tools` | No | - | Comma-separated tool names |
+
+### Current Vibraphone Implementation
+
+The project already has a working skill implementation:
+
+1. **Bundled Location**: `src/vibraphone/skills/v/SKILL.md`
+2. **Installation CLI**: `vibraphone-cli skill install`
+3. **Target Location**: `~/.claude/skills/v/`
+
+The existing `SKILL.md` documents all `/v` commands as MCP tool invocations, with:
+- Command syntax and flags
+- MCP tool mappings
+- JSON parameter examples
+- Error handling guidance
+
+## Integration with Python Package Bundling
+
+### Current Approach (Working)
+
+```python
+# src/vibraphone/cli.py
+SKILL_DEST_PATH = Path.home() / ".claude" / "skills" / "v"
+
+def get_bundled_skill_path() -> Path | None:
+    # Try importlib.resources first (works for installed packages)
+    try:
+        from importlib.resources import files
+        skill_dir = files("vibraphone.skills").joinpath("v")
+        if skill_dir.is_dir():
+            return Path(str(skill_dir))
+    except (ImportError, TypeError):
+        pass
+
+    # Fallback: check relative to this file (development mode)
+    dev_path = Path(__file__).parent / "skills" / "v"
+    if dev_path.is_dir():
+        return dev_path
+    return None
+
+def cmd_skill_install() -> int:
+    bundled_path = get_bundled_skill_path()
+    if SKILL_DEST_PATH.exists():
+        shutil.rmtree(SKILL_DEST_PATH)
+    SKILL_DEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(bundled_path, SKILL_DEST_PATH)
+    return 0
+```
+
+### pyproject.toml Configuration
+
+```toml
+[tool.hatch.build.targets.wheel]
+# Include skills directory in wheel for importlib.resources access
+artifacts = ["src/vibraphone/skills/"]
+```
+
+## Alternatives Considered for Slash Commands
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| Skills (SKILL.md) | Slash commands (.md in .claude/commands/) | Use slash commands when you want explicit user invocation via `/command`. Use skills for automatic model-driven activation. |
+| Personal skill (~/.claude/skills/) | Project skill (.claude/skills/) | Use project skills when team needs identical behavior. Use personal for individual customization. |
+| CLI install command | Manual file copy | CLI is better for versioned releases; manual for rapid iteration. |
+
+## What NOT to Use for Slash Commands
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Symlinks for skill installation | May break on Windows; Claude Code expects real directories | shutil.copytree for portable installation |
+| JSON or YAML config files for skill definition | Claude Code requires SKILL.md format | SKILL.md with YAML frontmatter |
+| MCP prompts as slash commands | Only works when MCP server is connected; skills work independently | Bundle as skill for always-available commands |
+| Absolute paths in SKILL.md | Breaks portability across machines | Use relative paths or document that users must adjust |
+
+## Key Design Decisions for Vibraphone
+
+### Skill vs Slash Command
+
+**Decision: Use Agent Skills (SKILL.md)**
+
+Rationale:
+1. The `/v` commands are already documented as model-invoked patterns
+2. Skills provide better discoverability through description matching
+3. Single file (SKILL.md) contains all command documentation
+4. Users install once via `vibraphone-cli skill install`
+
+### Installation Command Name
+
+**Decision: Keep `vibraphone-cli skill install`**
+
+The existing CLI already uses "skill" terminology which aligns with Claude Code's official naming.
+
+### File Structure
+
+```
+vibraphone/
+  src/vibraphone/
+    skills/
+      v/
+        SKILL.md          # All /v command documentation
+    cli.py                # skill install/status commands
+    server.py             # MCP server (existing)
+```
+
+---
+
+## Recommended Stack (General MCP Server)
 
 ### Build System & Packaging
 
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
 | pyproject.toml (PEP 621) | - | Single source of truth for project metadata | Standard since Python 3.11+. Replaces setup.py, setup.cfg. All modern tools read this. |
-| Hatchling | latest | Build backend | MEDIUM confidence. Fast, modern, zero-config for simple packages. Already in current pyproject.toml. Alternative: setuptools (more mature, wider adoption). |
+| Hatchling | latest | Build backend | Already in current pyproject.toml. Fast, modern, zero-config for simple packages. |
 | uv | 0.5+ | Package manager & tool installer | HIGH confidence. Fast Rust-based pip replacement. Native `uv tool install` support is the deployment target. |
-
-**Rationale for Hatchling:** Current pyproject.toml uses it. Hatchling is simpler than setuptools for pure-Python packages with straightforward builds. However, **setuptools has wider ecosystem adoption** if compatibility is critical.
-
-**Flag for validation:** Verify Hatchling vs setuptools for MCP server context. FastMCP documentation may have recommendations.
 
 ### Core Framework
 
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| FastMCP | latest | MCP protocol server implementation | HIGH confidence. Purpose-built for MCP servers in Python. Handles stdio transport, tool registration, server lifecycle. |
-| Python | >=3.13 | Runtime | HIGH confidence. Already specified in pyproject.toml. Modern async/await, type hints, pattern matching. |
-
-**Note:** Current pyproject.toml shows `requires-python = ">=3.13"` but `dependencies = []`. FastMCP **must** be added to dependencies.
+| FastMCP | 2.0+ | MCP protocol server implementation | Purpose-built for MCP servers in Python. Handles stdio transport, tool registration, server lifecycle. |
+| Python | >=3.13 | Runtime | Already specified in pyproject.toml. Modern async/await, type hints, pattern matching. |
 
 ### Project Structure
 
 | Component | Path | Purpose | Why |
 |-----------|------|---------|-----|
-| Source layout | src/vibraphone/ | Package code | HIGH confidence. Import isolation, prevents accidental imports of local files during development. Recommended by PyPA. |
-| Entry point | [project.scripts] | CLI command registration | HIGH confidence. Standard for `uv tool install`. Maps `vibraphone` command to server entry point. |
-| Tests | tests/ | Test suite | HIGH confidence. Standard pytest discovery location. |
-| Configuration | pyproject.toml | All config centralized | HIGH confidence. Ruff, pytest, coverage all configured here. |
+| Source layout | src/vibraphone/ | Package code | Import isolation, prevents accidental imports of local files during development. Recommended by PyPA. |
+| Entry point | [project.scripts] | CLI command registration | Standard for `uv tool install`. Maps `vibraphone` command to server entry point. |
+| Tests | tests/ | Test suite | Standard pytest discovery location. |
+| Configuration | pyproject.toml | All config centralized | Ruff, pytest, coverage all configured here. |
 
 ### Development Tools
 
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| Ruff | latest | Linting & formatting | HIGH confidence. 10-100x faster than flake8/black. Replaces: black, isort, flake8 + plugins. Already configured extensively in pyproject.toml. |
-| pytest | latest | Testing framework | HIGH confidence. Standard Python test framework. Already configured. |
-| pytest-cov | latest | Coverage reporting | MEDIUM confidence. Standard coverage tool for pytest. |
-| mypy or pyright | latest | Type checking | MEDIUM confidence. pyproject.toml has `[tool.ty.environment]` (unclear what "ty" is - may need clarification). Recommend pyright (faster) or mypy (more mature). |
+| Ruff | 0.15+ | Linting & formatting | 10-100x faster than flake8/black. Replaces: black, isort, flake8 + plugins. Already configured extensively in pyproject.toml. |
+| pytest | 8.0+ | Testing framework | Standard Python test framework. Already configured. |
+| pytest-cov | latest | Coverage reporting | Standard coverage tool for pytest. |
+| ty | 0.0.17+ | Type checking | Fast Rust-based type checker. Configured as `[tool.ty.environment]` in pyproject.toml. |
 
-**Current state:** pyproject.toml has extensive Ruff configuration (50+ rules enabled). This is good - keep it.
-
-**Flag for validation:** `[tool.ty.environment]` in current pyproject.toml is unclear. Verify what "ty" is. Standard options: mypy, pyright, or Pyre.
-
-### Runtime Dependencies (to be added)
+### Runtime Dependencies
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| FastMCP | latest | MCP server framework | Required. Core dependency. |
-| pyyaml | latest | Parse vibraphone.yaml | Required. Config file is YAML. |
-| httpx | latest | HTTP client for LLM APIs | Required. Code review calls OpenAI-compatible APIs. Use httpx (async) not requests (sync). |
-| pydantic | v2 | Config validation | Recommended. Type-safe config parsing. FastMCP may already pull this in. |
-
-**Note:** Current `dependencies = []` is incorrect. These must be added.
+| FastMCP | 2.0+ | MCP server framework | Required. Core dependency. |
+| pyyaml | 6.0+ | Parse vibraphone.yaml | Required. Config file is YAML. |
+| pydantic | 2.0+ | Config validation | Required. Type-safe config parsing. |
+| python-dotenv | 1.0+ | Environment variable loading | Required. API key management. |
+| instructor | 1.0+ | Structured LLM outputs | Required. Code review LLM calls. |
+| defusedxml | 0.7+ | Secure XML parsing | Required. Security for XML handling. |
 
 ### External CLI Dependencies (not in PyPI)
 
@@ -91,122 +256,88 @@ Vibraphone shells out to external tools. These are **not** Python dependencies.
 
 ---
 
-## Alternatives Considered
-
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Build backend | Hatchling | setuptools | Setuptools is more mature and widely adopted, but Hatchling is simpler for pure-Python. MEDIUM confidence - may prefer setuptools for stability. |
-| Build backend | Hatchling | Poetry | Poetry is a full workflow tool (combines pip + venv + build). Vibraphone targets uv ecosystem. Poetry's build backend (poetry-core) adds complexity. |
-| Linter/formatter | Ruff | black + flake8 + isort | Ruff consolidates 3+ tools into one, 10-100x faster. Already configured in project. |
-| HTTP client | httpx | requests | httpx supports async (FastMCP is async). requests is sync-only. |
-| Type checker | pyright/mypy | None | Type checking is valuable for 4000 line codebase. Current config unclear (tool.ty). |
-| Config format | YAML (vibraphone.yaml) | TOML | YAML is already chosen. TOML is more Pythonic but YAML is more human-friendly for nested structures. |
-
----
-
 ## Package Structure
 
 ```
 vibraphone/
-├── pyproject.toml              # PEP 621 metadata, dependencies, tool config
-├── README.md                   # PyPI description
-├── LICENSE                     # Required for PyPI
-├── src/
-│   └── vibraphone/
-│       ├── __init__.py         # Package entry, version
-│       ├── server.py           # FastMCP server entry point
-│       ├── tools/              # MCP tools (start_task, etc.)
-│       ├── utils/              # Shared utilities
-│       └── templates/          # Files for init_project to generate
-├── tests/
-│   ├── unit/                   # Unit tests with mocks
-│   └── integration/            # Integration tests with real git/br
-└── .python-version             # Python version for tooling
+  pyproject.toml              # PEP 621 metadata, dependencies, tool config
+  README.md                   # PyPI description
+  LICENSE                     # Required for PyPI
+  src/
+    vibraphone/
+      __init__.py             # Package entry, version
+      server.py               # FastMCP server entry point
+      cli.py                  # vibraphone-cli skill install/status
+      config.py               # vibraphone.yaml parsing
+      tools/                  # MCP tools (start_task, etc.)
+        __init__.py
+        task_tools.py
+        worktree_tools.py
+        quality_gate_tools.py
+        scaffold_tools.py
+        stack_tools.py
+        bridge_tools.py
+      utils/                  # Shared utilities
+        __init__.py
+        cli_runner.py
+        command_runner.py
+        context.py
+        errors.py
+        plan_parser.py
+        prerequisites.py
+        quality_state.py
+        session.py
+        template_loader.py
+        worktree_ops.py
+        auto_detect.py
+        circuit_breaker.py
+        code_reviewer.py
+      templates/              # Files for init_project to generate
+        __init__.py
+      skills/                 # Bundled Claude Code skill
+        __init__.py
+        v/
+          SKILL.md            # All /v command documentation
+  tests/
+    unit/                     # Unit tests with mocks
+    integration/              # Integration tests with real git/br
 ```
-
-**Current issue:** pyproject.toml has:
-```toml
-[tool.hatch.build.targets.wheel]
-packages = ["config.py", "server.py", "tools", "utils"]
-```
-
-This is **flat layout** (files at repo root). Need to migrate to **src/vibraphone/** layout.
-
-**Migration required:**
-1. Create `src/vibraphone/` directory
-2. Move `config.py`, `server.py`, `tools/`, `utils/` into it
-3. Update `[tool.hatch.build.targets.wheel]` to `packages = ["src/vibraphone"]` OR remove (Hatchling auto-discovers src/ layout)
-4. Add `[project.scripts]` entry point
 
 ---
 
-## pyproject.toml Configuration
-
-### Required Additions
+## pyproject.toml Configuration (Current)
 
 ```toml
 [project]
 name = "vibraphone"
 version = "0.1.0"
-description = "MCP server for AI coding agents that enforces disciplined software development workflows"
+description = "Vibraphone is an MCP server for AI coding agents that enforces disciplined software development workflows."
 readme = "README.md"
 requires-python = ">=3.13"
-license = {text = "MIT"}  # or appropriate license
+license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Luke McGuire", email = "luke@example.com"}
 ]
-keywords = ["mcp", "mcp-server", "ai-agents", "tdd", "workflow"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3.13",
-]
-
 dependencies = [
-    "fastmcp>=0.1.0",      # Version TBD - check FastMCP releases
-    "pyyaml>=6.0",
-    "httpx>=0.27.0",
+    "defusedxml>=0.7.1",
+    "fastmcp>=2.0",
+    "instructor>=1.0",
     "pydantic>=2.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.1",
-    "pytest-asyncio>=0.23",  # FastMCP is async
-    "ruff>=0.2",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
-vibraphone = "vibraphone.server:main"  # Entry point for `uv tool install vibraphone`
-
-[project.urls]
-Homepage = "https://github.com/yourusername/vibraphone"
-Documentation = "https://github.com/yourusername/vibraphone#readme"
-Repository = "https://github.com/yourusername/vibraphone"
-Issues = "https://github.com/yourusername/vibraphone/issues"
+vibraphone = "vibraphone.server:main"
+vibraphone-cli = "vibraphone.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Remove [tool.hatch.build.targets.wheel] if using src/ layout
-# Hatchling auto-discovers src/vibraphone/
-```
-
-### Entry Point Implementation
-
-In `src/vibraphone/server.py`:
-
-```python
-def main() -> None:
-    """Entry point for vibraphone MCP server."""
-    # FastMCP server startup logic
-    # This is what runs when user executes `vibraphone` command
-    pass
-
-if __name__ == "__main__":
-    main()
+[tool.hatch.build.targets.wheel]
+# Include templates and skills directories in wheel for importlib.resources access
+artifacts = ["src/vibraphone/templates/", "src/vibraphone/skills/"]
 ```
 
 ---
@@ -217,20 +348,20 @@ if __name__ == "__main__":
 
 ```bash
 # Clone repo
-git clone https://github.com/yourusername/vibraphone.git
+git clone https://github.com/lukemcguire/vibraphone.git
 cd vibraphone
 
 # Install with uv
 uv pip install -e ".[dev]"
-
-# Or traditional pip
-pip install -e ".[dev]"
 
 # Run tests
 uv run pytest
 
 # Start server manually
 vibraphone
+
+# Install skill
+vibraphone-cli skill install
 ```
 
 ### End-User Installation (uv tool install)
@@ -242,223 +373,40 @@ uv tool install vibraphone
 # Register with Claude Code MCP
 claude mcp add vibraphone -- vibraphone
 
+# Install slash commands
+vibraphone-cli skill install
+
 # Tool now available in Claude Code
-# Agent calls init_project, start_task, etc.
-```
-
-### Publishing to PyPI
-
-```bash
-# Build distribution
-uv build
-
-# Upload to PyPI (requires account + token)
-uv publish
-```
-
-**Note:** `uv build` and `uv publish` are MEDIUM confidence. Verify uv has these commands (may be `python -m build` + `twine upload` if uv doesn't provide).
-
----
-
-## Dependency Version Strategy
-
-| Dependency Type | Pin Strategy | Rationale |
-|-----------------|-------------|-----------|
-| Python | `>=3.13` | Minimum version. Allows newer. User controls runtime. |
-| Direct deps | Minimum + caret (`>=X.Y`) | Allow patch updates. Avoid breaking changes. |
-| Dev deps | Minimum + caret (`>=X.Y`) | Flexibility for developers. |
-| Lockfile | Yes (uv.lock or requirements.txt) | Reproducible dev environments. |
-
-**For FastMCP:** Check if FastMCP has API stability guarantees. If pre-1.0, may need tighter pinning (`>=0.1,<0.2`).
-
----
-
-## Testing Stack
-
-### Test Organization
-
-```
-tests/
-├── unit/
-│   ├── test_config.py          # Config parsing, validation
-│   ├── test_tools.py           # Tool logic with mocks
-│   └── test_utils.py           # Utility functions
-├── integration/
-│   ├── test_task_workflow.py   # Full workflow: start → complete
-│   ├── test_git_ops.py         # Real git operations
-│   └── test_br_ops.py          # Real beads_rust operations
-└── conftest.py                 # Shared fixtures
-```
-
-### Test Dependencies
-
-```toml
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.1",
-    "pytest-asyncio>=0.23",       # FastMCP tools are async
-    "pytest-mock>=3.12",          # Mock external processes
-    "pytest-timeout>=2.2",        # Prevent hanging tests
-]
-```
-
-### Test Execution
-
-```bash
-# All tests
-uv run pytest
-
-# Unit tests only (fast)
-uv run pytest tests/unit
-
-# Integration tests (slower, requires git/br)
-uv run pytest tests/integration
-
-# Coverage report
-uv run pytest --cov=src/vibraphone --cov-report=html
+# Skill activated automatically based on description matching
 ```
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### 1. Bundling External Binaries
-**Why avoid:** Increases package size, platform-specific nightmares, security concerns.
-**Instead:** Detect-and-guide via `check_prerequisites`. Users install br/bv/git/just via their system package managers.
+### 1. Symlinks for skill installation
+**Why avoid:** May break on Windows; Claude Code expects real directories
+**Instead:** shutil.copytree for portable installation
 
 ### 2. Flat Layout (files at repo root)
-**Why avoid:** Import pollution, accidental test imports, harder to package.
-**Instead:** src/vibraphone/ layout. Already recommended by PyPA.
+**Why avoid:** Import pollution, accidental test imports, harder to package
+**Instead:** src/vibraphone/ layout. Already implemented.
 
 ### 3. setup.py/setup.cfg
-**Why avoid:** Deprecated. pyproject.toml (PEP 621) is the standard since Python 3.11+.
-**Instead:** All metadata in pyproject.toml.
+**Why avoid:** Deprecated. pyproject.toml (PEP 621) is the standard
+**Instead:** All metadata in pyproject.toml. Already implemented.
 
 ### 4. Hardcoded Paths
-**Why avoid:** Breaks when installed as package vs local dev.
-**Instead:** Use `importlib.resources` for package data, vibraphone.yaml for user-configurable paths.
+**Why avoid:** Breaks when installed as package vs local dev
+**Instead:** Use `importlib.resources` for package data. Already implemented in cli.py.
 
 ### 5. Synchronous HTTP Client (requests)
-**Why avoid:** FastMCP is async. Blocking calls in async context cause issues.
-**Instead:** httpx (async HTTP client).
+**Why avoid:** FastMCP is async. Blocking calls in async context cause issues
+**Instead:** httpx (async HTTP client) if needed for external APIs.
 
 ### 6. Auto-Installation of External Tools
-**Why avoid:** Security risk, sudo requirements, user environment violations.
+**Why avoid:** Security risk, sudo requirements, user environment violations
 **Instead:** Detect + report missing tools. User installs via cargo/npm/apt.
-
----
-
-## Configuration Management
-
-### vibraphone.yaml (per-project, user-created)
-
-```yaml
-# User's project configuration
-worktree_location: ../vibraphone-worktrees  # Configurable
-components:
-  - name: server
-    path: src/server
-quality_gates:
-  - tests_pass
-  - lint_clean
-  - review_approved
-llm:
-  base_url: https://api.openai.com/v1
-  model: gpt-4
-  api_key_env: OPENAI_API_KEY
-```
-
-**Location:** Project root (where user calls `init_project`).
-**Parsing:** pyyaml + pydantic for validation.
-**Discovery:** On MCP server startup, check for vibraphone.yaml in cwd. If present, load config. If absent, stay quiet (not a vibraphone project).
-
-### Package Defaults (embedded in vibraphone package)
-
-Store default templates in `src/vibraphone/templates/`:
-- CONSTITUTION.md
-- ARCHITECTURE.md
-- AGENTS.md
-- CLAUDE.md
-- etc.
-
-`init_project` tool copies these into user's `.planning/vibraphone/`.
-
-**Access templates:** Use `importlib.resources` or `importlib.metadata.files()` to read package data at runtime.
-
----
-
-## CI/CD Considerations
-
-### GitHub Actions Workflow (example)
-
-```yaml
-name: Test & Lint
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v1
-      - run: uv pip install -e ".[dev]"
-      - run: uv run pytest --cov
-      - run: uv run ruff check
-
-  publish:
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v1
-      - run: uv build
-      - run: uv publish
-    env:
-      UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-```
-
-**Note:** `uv build` and `uv publish` syntax is MEDIUM confidence. Verify uv documentation.
-
----
-
-## Migration Checklist
-
-From current state (flat layout, no dependencies) to production-ready package:
-
-- [ ] Create src/vibraphone/ directory structure
-- [ ] Move config.py, server.py, tools/, utils/ into src/vibraphone/
-- [ ] Add `__init__.py` files (make it a package)
-- [ ] Update pyproject.toml:
-  - [ ] Add dependencies (fastmcp, pyyaml, httpx, pydantic)
-  - [ ] Add dev dependencies (pytest-asyncio, pytest-mock)
-  - [ ] Add [project.scripts] entry point
-  - [ ] Add license, authors, URLs
-  - [ ] Remove/fix [tool.hatch.build.targets.wheel]
-- [ ] Clarify [tool.ty.environment] (what is "ty"? Use mypy or pyright)
-- [ ] Create templates/ directory in package for init_project
-- [ ] Implement server.py main() entry point
-- [ ] Update tests for new import paths (vibraphone.tools.X not tools.X)
-- [ ] Add importlib.resources for template access
-- [ ] Test `uv pip install -e .`
-- [ ] Test `vibraphone` command starts server
-- [ ] Test `uv tool install .` (local install)
-- [ ] Write README.md for PyPI
-- [ ] Add LICENSE file
-- [ ] Verify FastMCP version compatibility
-
----
-
-## Open Questions & Validation Needed
-
-| Question | Confidence | Action |
-|----------|------------|--------|
-| FastMCP latest version & API stability | LOW | Check FastMCP docs/releases. May need version pinning if pre-1.0. |
-| Hatchling vs setuptools for MCP context | MEDIUM | Verify FastMCP examples. May prefer setuptools for ecosystem consistency. |
-| [tool.ty.environment] in pyproject.toml | LOW | What is "ty"? Replace with mypy or pyright config. |
-| uv build/publish commands | MEDIUM | Verify uv documentation. May need python -m build + twine. |
-| FastMCP async requirements | MEDIUM | Verify if FastMCP tools must be async. Affects pytest-asyncio necessity. |
-| Minimum Python version (3.13 vs 3.11+) | MEDIUM | 3.13 is very recent. Consider 3.11+ for wider adoption unless 3.13 features required. |
 
 ---
 
@@ -470,28 +418,26 @@ From current state (flat layout, no dependencies) to production-ready package:
 | src/ layout | HIGH | PyPA recommendation, industry standard |
 | Ruff for linting | HIGH | Current in project, widely adopted |
 | pytest framework | HIGH | Industry standard |
-| httpx for async HTTP | HIGH | Standard async HTTP client |
-| FastMCP specifics | LOW | Cannot verify current API, version, conventions |
-| Hatchling vs setuptools | MEDIUM | Both valid, need FastMCP context |
-| uv tool install details | MEDIUM | uv is newer, need current docs |
-| [tool.ty] config | LOW | Unknown tool, needs investigation |
+| FastMCP | HIGH | Verified version 2.0+ in dependencies |
+| Agent Skills (SKILL.md) | HIGH | Verified against official Anthropic docs |
+| skill install via CLI | HIGH | Already implemented and working |
+| uv tool install | HIGH | Standard uv workflow |
 
-**Overall confidence: MEDIUM** - Core Python packaging practices are solid, but FastMCP-specific details and uv tooling details need verification with current documentation.
+**Overall confidence: HIGH**
 
 ---
 
 ## Sources
 
-**Verified:**
-- Existing pyproject.toml (read from project)
-- migration-plan.md (read from project)
-- Python packaging PEPs (621, 517, 518) - established standards
+**Verified against official documentation:**
+- [Anthropic Docs - Slash Commands](https://docs.anthropic.com/en/docs/claude-code/slash-commands) - Command file format, frontmatter fields, argument handling
+- [Anthropic Docs - Agent Skills](https://docs.anthropic.com/en/docs/claude-code/skills) - SKILL.md format, discovery process, invocation model
+- [Anthropic Docs - Tutorials](https://docs.anthropic.com/en/docs/claude-code/tutorials) - Create custom slash commands tutorial
+- [Anthropic Docs - Memory](https://docs.anthropic.com/en/docs/claude-code/memory) - CLAUDE.md locations and hierarchy
+- Existing vibraphone codebase - Current skill implementation pattern
+- Python packaging PEPs (621, 517, 518) - Established standards
 
-**Needs verification (no web access):**
-- FastMCP current version, API, examples
-- uv tool install specifics (uv is newer tool, <2 years old)
-- Hatchling vs setuptools for MCP servers
-- [tool.ty.environment] purpose
-- Current Python version adoption (3.13 vs 3.11)
+---
 
-**Research limitations:** Unable to access Context7, official documentation, or web search. Recommendations based on established Python packaging standards (high confidence) and FastMCP/uv understanding from training data (low-medium confidence, flagged for validation).
+*Stack research for: Vibraphone MCP Server with Claude Code slash commands*
+*Researched: 2026-02-18*

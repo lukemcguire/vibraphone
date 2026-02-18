@@ -1,89 +1,374 @@
-# Domain Pitfalls
+# Pitfalls Research
 
-**Domain:** Python MCP server extraction / packaging
-**Researched:** 2026-02-16
+**Domain:** Claude Code slash commands / MCP tool invocation
+**Researched:** 2026-02-18
+**Confidence:** HIGH
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites or major issues.
+### Pitfall 1: Dict/List Parameter Stringification
 
-### Pitfall 1: Hardcoded Relative Paths Survive Migration
+**What goes wrong:**
+When a slash command instructs Claude to call an MCP tool with dict or list
+parameters, Claude may serialize the dict/list to a JSON string instead of
+passing it as a native object. The MCP tool receives `values: "{\"lang\":
+\"go\"}"` instead of `values: {"lang": "go"}`.
 
-**What goes wrong:** Existing code uses `./worktrees/`, `./docs/`, `./.vibraphone/` relative to the template project root. After extraction to an installed package, these paths resolve relative to the user's CWD — which is unpredictable (could be worktree dir, home dir, etc.).
-**Why it happens:** Path assumptions are invisible until the server runs from a different location than where it was developed.
-**Consequences:** Tools create files in wrong locations. Worktrees appear in random directories. Config files not found. Silent data loss if session.json written to wrong path.
-**Prevention:** Audit every `Path(".")` and `os.path.join` in the codebase. Replace with config-derived paths. All paths must flow from either (a) vibraphone.yaml location (project root) or (b) `~/.vibraphone/` (global state). Add integration test that runs tools from a different CWD than project root.
-**Detection:** grep for `"./`, `Path(".")`, `os.getcwd()` in source files.
+**Why it happens:**
+Claude Code's tool calling abstraction layer treats all string values
+literally. When the SKILL.md documentation shows JSON examples in code
+blocks, Claude may interpret this as "pass a string containing JSON" rather
+than "pass a JSON object." This is exacerbated when:
 
-### Pitfall 2: Package Data Not Included in Distribution
+- Examples use JSON syntax in markdown without clear "native object" cues
+- The model sees `{"key": "value"}` and treats the entire thing as a string
+literal
+- Previous conversation context shows serialized JSON patterns
 
-**What goes wrong:** Template files (AGENTS.md, CONSTITUTION.md, reviewer.md, etc.) exist in the source tree but aren't included in the built wheel. `init_project` fails with FileNotFoundError in production.
-**Why it happens:** Python packaging requires explicit inclusion of non-Python files. `pyproject.toml` needs `[tool.hatch.build.targets.wheel]` or equivalent configuration to include template directories.
-**Consequences:** `init_project` works in development (`pip install -e .`) but fails after `uv tool install` from built package.
-**Prevention:** Use `importlib.resources` (not `__file__`-relative paths) to access bundled templates. Add a test that installs the built wheel in a clean venv and verifies all templates are accessible. Configure package data explicitly in pyproject.toml.
-**Detection:** Build wheel, install in clean venv, call `init_project` — if it fails, package data config is wrong.
+**Consequences:**
+- MCP tools expecting `dict[str, Any]` receive `str`, causing TypeErrors
+- Tool fails to access `data["key"]` because `data` is a string
+- Subtle bugs where `isinstance(param, dict)` checks silently fail
+- Workarounds like `json.loads()` inside tools become necessary (brittle)
 
-### Pitfall 3: Subprocess Calls Assume PATH Environment
+**How to avoid:**
 
-**What goes wrong:** `subprocess.run(["br", ...])` works on developer machine where `br` is in PATH. After `uv tool install`, the server runs in an isolated environment where PATH may not include cargo bin, node_modules/.bin, etc.
-**Why it happens:** `uv tool install` creates isolated environments. External CLIs (br, git, just, npx) must be on the system PATH, not the venv PATH.
-**Consequences:** All tools that shell out fail silently or with cryptic "command not found" errors. User thinks vibraphone is broken.
-**Prevention:** `check_prerequisites` should run on first tool call (not just when explicitly called). Each subprocess call should catch `FileNotFoundError` and return a helpful message naming the missing binary and install command. Never swallow subprocess errors.
-**Detection:** Install vibraphone in a minimal environment without br/git/just and verify error messages are clear.
+1. **Explicit convention documentation** in SKILL.md (current approach):
+```markdown
+When calling vibraphone MCP tools, **dict and list parameters must be passed
+as JSON objects/arrays, NOT as JSON strings**.
+
+| WRONG                          | RIGHT                        |
+| ------------------------------ | ---------------------------- |
+| `values: "{\"lang\": \"go\"}"` | `values: {"lang": "go"}`     |
+| `files: "[\"a.py\", \"b.py\"]"`| `files: ["a.py", "b.py"]`    |
+```
+
+2. **Use schema-compatible type hints** in tool definitions:
+```python
+@mcp.tool
+async def configure_stack(
+    components: dict[str, dict[str, Any]],  # NOT str | dict
+    ...
+) -> dict[str, Any]:
+```
+
+3. **Add defensive parsing** in tools (backup, not primary solution):
+```python
+def _ensure_dict(value: dict | str) -> dict:
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
+```
+
+**Warning signs:**
+- Tool calls failing with "string indices must be integers"
+- `TypeError: string indices must be integers, not str`
+- Logs showing parameters arriving as `"{"key": ...}"` with extra quotes
+- SKILL.md examples being copy-pasted literally as strings
+
+**Phase to address:**
+Phase 1 (Slash Command Implementation) - Document convention in SKILL.md;
+Phase 2 (Tool Hardening) - Add defensive parsing as fallback
+
+---
+
+### Pitfall 2: Skill Not Auto-Discovered
+
+**What goes wrong:**
+User installs skill via `vibraphone skill install` but `/v` commands are not
+recognized. Claude Code does not invoke the skill even when the description
+matches the user's request.
+
+**Why it happens:**
+Skills have strict discovery requirements that are easy to violate:
+- YAML frontmatter syntax errors (tabs instead of spaces, missing `---`)
+- Description field too vague or missing trigger keywords
+- Skill directory in wrong location (`~/.claude/skills/v/` not
+  `~/.claude/skills/vibraphone/`)
+- SKILL.md file not named exactly `SKILL.md` (case-sensitive)
+
+**Consequences:**
+- Skill silently fails to load
+- User frustration - "I installed it but it doesn't work"
+- Debugging requires restarting Claude Code to see load errors
+
+**How to avoid:**
+
+1. **Validate YAML frontmatter** during skill install:
+```python
+def validate_skill_md(path: Path) -> list[str]:
+    errors = []
+    content = path.read_text()
+    if not content.startswith("---\n"):
+        errors.append("Missing opening ---")
+    # ... validate name, description fields
+    return errors
+```
+
+2. **Include specific trigger keywords** in description:
+```yaml
+description: |
+  Vibraphone slash commands for MCP tool orchestration. Use when the user
+  invokes /v commands like "/v init", "/v list", "/v next", "/v start"...
+```
+
+3. **Test skill discovery** after install:
+```bash
+vibraphone skill install
+claude  # Then ask: "What Skills are available?"
+```
+
+**Warning signs:**
+- `/v` command not appearing in tab completion
+- Claude doesn't respond to skill-related queries
+- `claude --debug` shows skill loading errors
+
+**Phase to address:**
+Phase 1 (Slash Command Implementation) - Validate SKILL.md during install
+
+---
+
+### Pitfall 3: MCP Tool Name Mismatch
+
+**What goes wrong:**
+SKILL.md instructs Claude to call `vibraphone_init_project` but the actual
+registered tool name is `init_project` (FastMCP strips package prefix by
+default) or vice versa.
+
+**Why it happens:**
+FastMCP's `@mcp.tool` decorator registers tools with the function name, not
+a namespaced path. The documentation may assume a prefix that doesn't exist,
+or the tool may have been renamed during refactoring.
+
+**Consequences:**
+- "Tool not found" errors
+- Claude attempts to call non-existent tools
+- User sees cryptic MCP protocol errors
+
+**How to avoid:**
+
+1. **Verify actual tool names** by listing registered tools:
+```python
+# In server startup or test
+for tool in mcp.list_tools():
+    print(f"Registered: {tool.name}")
+```
+
+2. **Use consistent naming** between SKILL.md and actual tools:
+```markdown
+**MCP Tool**: `init_project`  # Match actual @mcp.tool function name
+```
+
+3. **Document the mapping** explicitly if namespacing is needed:
+```markdown
+**MCP Tool Name Mapping:**
+- SKILL.md: `vibraphone_init_project`
+- Actual: `init_project` (via mcp__vibraphone__init_project)
+```
+
+**Warning signs:**
+- Tool calls returning "unknown tool" errors
+- Claude asking for clarification about which tool to use
+- Inconsistency between docs and behavior
+
+**Phase to address:**
+Phase 1 (Slash Command Implementation) - Audit SKILL.md tool names against
+actual registrations
+
+---
 
 ## Moderate Pitfalls
 
-### Pitfall 4: Config Discovery Breaks in Worktrees
+### Pitfall 4: Missing Skill Restart After Update
 
-**What goes wrong:** vibraphone.yaml lives in project root. When agent is working in a worktree (`~/.vibraphone/worktrees/task-123/`), the CWD is the worktree — not the project root. Config discovery walks up the directory tree and fails (worktree parent is `~/.vibraphone/worktrees/`, not the project).
-**Prevention:** Store project root in session state when `start_task` creates the worktree. Tools read project root from session, not from CWD. Alternatively, git worktrees share `.git` — use `git rev-parse --show-toplevel` on the main worktree to find project root.
+**What goes wrong:**
+User updates SKILL.md (e.g., fixes documentation) but changes don't take
+effect. Old behavior persists.
 
-### Pitfall 5: Entry Point Function Signature Wrong for FastMCP
+**Why it happens:**
+Claude Code loads skills once at startup. Changes to SKILL.md require
+restarting Claude Code to take effect.
 
-**What goes wrong:** `[project.scripts] vibraphone = "vibraphone.server:main"` requires `main()` to be a synchronous entry point that starts the async server. FastMCP's startup may need specific invocation patterns (e.g., `mcp.run()` with stdio transport).
-**Prevention:** Verify the exact FastMCP entry point pattern before migrating. Test that `vibraphone` command starts the server and responds to MCP protocol on stdio. Test early — this is the foundation everything else depends on.
+**Prevention:**
+- Document this in skill install output: "Restart Claude Code if it's already
+  running"
+- Add a `/v reload` hint in documentation (though this isn't a real command)
 
-### Pitfall 6: Template Files Conflict with Existing User Files
+---
 
-**What goes wrong:** `init_project` generates AGENTS.md, CLAUDE.md, Justfile, .gitignore entries. User already has these files. Overwriting loses their customizations. Skipping loses vibraphone setup.
-**Prevention:** For each generated file, check if it exists first. For AGENTS.md/CLAUDE.md: fail if they exist and offer merge guidance. For Justfile: append recipes (don't overwrite). For .gitignore: append entries only if not already present. For .mcp.json: merge the server entry into existing config. Never silently overwrite.
+### Pitfall 5: Argument Parsing Ambiguity
 
-### Pitfall 7: Async Context Issues in Tool Handlers
+**What goes wrong:**
+User runs `/v commit feat: add feature` but the message is parsed incorrectly.
+Flags like `--language go` may be confused with positional arguments.
 
-**What goes wrong:** FastMCP tool handlers are async. Subprocess calls (br, git, just) are blocking. Using `subprocess.run()` inside async handlers blocks the event loop, making the server unresponsive during long operations (test suites, code review).
-**Prevention:** Use `asyncio.create_subprocess_exec` or run blocking calls via `asyncio.to_thread(subprocess.run, ...)`. The existing codebase may already handle this — verify during migration.
+**Why it happens:**
+Skills receive `$ARGUMENTS` as a single string. Claude must parse this
+according to the skill's instructions, which may be ambiguous.
 
-## Minor Pitfalls
+**Prevention:**
+- Use explicit argument hints in SKILL.md frontmatter:
+```yaml
+argument-hint: <task_id> [--notes NOTES]
+```
+- Show clear examples in SKILL.md for each command variant
 
-### Pitfall 8: Version Pinning Too Tight or Too Loose
+---
 
-**What goes wrong:** Pinning `fastmcp==1.2.3` breaks when users have a different version. Using `fastmcp>=1.0` allows breaking changes.
-**Prevention:** Use compatible release pins: `fastmcp~=1.2` (allows 1.2.x patches, blocks 1.3). Pin major+minor, allow patch.
+### Pitfall 6: Skill Conflicts With User Commands
 
-### Pitfall 9: Test Imports Break After Restructuring
+**What goes wrong:**
+User has a personal `/v` command in `~/.claude/commands/v.md` that conflicts
+with the vibraphone skill.
 
-**What goes wrong:** Tests import `from tools.beads_tools import ...` — after moving to `src/vibraphone/tools/`, all imports change to `from vibraphone.tools.beads_tools import ...`. Easy to miss some.
-**Prevention:** Migrate tests alongside source. Run full test suite after restructuring. Use `pytest --import-mode=importlib` to catch import issues early.
+**Why it happens:**
+Slash commands and skills have separate namespaces but share the invocation
+syntax. A `/v` command shadows the skill's `/v` trigger.
 
-### Pitfall 10: Session State Format Incompatibility
+**Prevention:**
+- Document that `/v` is reserved for vibraphone
+- Consider alternative naming if conflicts are common
+- Check for existing commands during install (warn, don't clobber)
 
-**What goes wrong:** Existing `.vibraphone/session.json` format from template may not match what the standalone package expects. Users migrating from template get corrupt session state.
-**Prevention:** Version the session format. Add a migration check on startup that upgrades old formats or warns about incompatibility.
+---
 
-## Phase-Specific Warnings
+## Technical Debt Patterns
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Package restructuring | Paths break (Pitfall 1), imports break (Pitfall 9) | Audit all paths, run tests from different CWD |
-| Entry point setup | FastMCP invocation wrong (Pitfall 5) | Verify pattern early, test stdio transport |
-| Template bundling | Package data missing (Pitfall 2) | Use importlib.resources, test from installed wheel |
-| Tool migration | Subprocess PATH issues (Pitfall 3), async blocking (Pitfall 7) | Wrap all subprocess calls, use async subprocess |
-| init_project | File conflicts (Pitfall 6) | Check-before-write, merge strategy per file type |
-| Config system | Worktree discovery (Pitfall 4) | Store project root in session state |
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Skip defensive parsing | Faster implementation | Stringification bugs in production | Never for dict params |
+| Omit argument hints | Less documentation | User confusion, parsing errors | Never for complex commands |
+| Hardcode tool names | Quick copy-paste | Breaks on refactors | Never - always verify |
+
+## Integration Gotchas
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| FastMCP tool registration | Assuming namespaced names | Use exact function name from @mcp.tool |
+| Claude Code skill loading | Using tabs in YAML frontmatter | Use spaces only (YAML spec) |
+| MCP protocol | Passing dicts as JSON strings | Pass as native objects |
+| Skill discovery | Vague description field | Include specific trigger keywords |
+
+## "Looks Done But Isn't" Checklist
+
+- [ ] **SKILL.md validation:** YAML frontmatter parsed without errors? Verify
+      with `cat SKILL.md | head -n 10`
+- [ ] **Tool name audit:** SKILL.md tool names match actual @mcp.tool
+      registrations? Run verification script.
+- [ ] **Parameter convention:** Dict/list examples show objects, not strings?
+      Check all JSON examples in SKILL.md.
+- [ ] **Skill discovery:** Skill appears in "What Skills are available?" query?
+      Test after install.
+- [ ] **Restart reminder:** User told to restart Claude Code after install?
+      Check install output.
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Parameter stringification | MEDIUM | Add defensive parsing in tool, update SKILL.md convention |
+| Skill not discovered | LOW | Fix YAML syntax, restart Claude Code |
+| Tool name mismatch | LOW | Update SKILL.md to match actual names |
+| Missing restart | LOW | Restart Claude Code |
+
+## Pitfall-to-Phase Mapping
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Parameter stringification | Phase 1 (SKILL.md convention) | Test with complex dict params |
+| Skill not discovered | Phase 1 (validate on install) | Run skill discovery test |
+| Tool name mismatch | Phase 1 (audit tool names) | Compare SKILL.md to mcp.list_tools() |
+| Missing restart | Phase 1 (install message) | User can restart independently |
+| Argument parsing | Phase 1 (argument-hint frontmatter) | Test edge cases |
+| Skill conflicts | Phase 1 (check existing commands) | Warn during install |
+
+## Root Cause Analysis: Parameter Stringification
+
+The parameter stringification issue has multiple contributing factors:
+
+### 1. Model Interpretation Ambiguity
+Claude interprets JSON-like text in two ways:
+- As a **literal string**: `"{"key": "value"}"` (the characters `{`, `"`, etc.)
+- As a **JSON object**: `{"key": "value"}` (a structured value)
+
+When SKILL.md shows:
+```markdown
+Call with:
+```json
+{"values": {"lang": "go"}}
+```
+```
+
+Claude may read this as "pass a string that looks like JSON" rather than
+"pass a JSON object."
+
+### 2. MCP Protocol Layer
+The MCP protocol serializes tool call parameters to JSON for transport. When
+Claude passes `{"values": "{\"lang\": \"go\"}"}`, the protocol correctly
+transmits a string value. The receiving tool gets a string, not a dict.
+
+### 3. No Type Enforcement at Boundary
+MCP tool definitions use Python type hints, but these are documentation-only
+at the protocol level. The protocol doesn't reject mismatched types - it just
+passes what it receives.
+
+### Why SKILL.md Convention Helps (But Doesn't Fully Solve)
+
+The current SKILL.md convention:
+```markdown
+| WRONG                          | RIGHT                        |
+| ------------------------------ | ---------------------------- |
+| `values: "{\"lang\": \"go\"}"` | `values: {"lang": "go"}`     |
+```
+
+This helps by:
+- Making the distinction explicit
+- Showing the wrong pattern for comparison
+
+But it doesn't fully solve because:
+- Claude still interprets markdown examples as text
+- The model's "mental model" of JSON vs string is context-dependent
+- Different Claude versions may interpret differently
+
+### Recommended Multi-Layer Defense
+
+1. **SKILL.md layer**: Clear convention documentation (current approach)
+2. **Tool layer**: Defensive parsing for dict params
+   ```python
+   def _parse_maybe_json(value: dict | str | None) -> dict | None:
+       if value is None:
+           return None
+       if isinstance(value, str):
+           try:
+               return json.loads(value)
+           except json.JSONDecodeError:
+               return {"raw": value}  # Fallback
+       return value
+   ```
+3. **Error messages layer**: When type mismatch detected, return helpful error
+   ```python
+   if isinstance(components, str):
+       return {
+           "status": "error",
+           "error": "components must be an object, not a string. Pass {...} not \"...\"",
+           "hint": "See SKILL.md 'MCP Tool Calling Convention' section"
+       }
+   ```
 
 ## Sources
 
-- Python Packaging User Guide (packaging.python.org)
-- importlib.resources documentation (docs.python.org)
-- Common Python packaging mistakes (training data, MEDIUM confidence)
-- MCP server patterns (training data, LOW confidence — needs verification)
+- [Claude Code Skills Documentation](https://docs.anthropic.com/en/docs/claude-code/skills)
+  (HIGH confidence - official docs)
+- [Claude Code Slash Commands Documentation](https://docs.anthropic.com/en/docs/claude-code/slash-commands)
+  (HIGH confidence - official docs)
+- [Claude Code MCP Documentation](https://docs.anthropic.com/en/docs/claude-code/mcp)
+  (HIGH confidence - official docs)
+- Project SKILL.md at `/home/luke/workspace/github.com/lukemcguire/vibraphone/src/vibraphone/skills/v/SKILL.md`
+  (HIGH confidence - project source)
+- FastMCP decorator patterns (MEDIUM confidence - training data + codebase
+  verification)
+
+---
+*Pitfalls research for: Claude Code slash commands / MCP tool invocation*
+*Researched: 2026-02-18*
