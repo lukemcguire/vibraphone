@@ -10,12 +10,12 @@ review) before it can be committed — enforced by tooling, not by prompting.
 
 ## Current Position
 
-Phase: 10 (ready to start)
-Plan: Awaiting approval
-Status: Roadmap created, ready for approval
-Last activity: 2026-02-18 — Roadmap created for v0.1.1
+Phase: 10-command-infrastructure
+Plan: 02 complete
+Status: In progress - 10-02 complete, continuing to 10-03
+Last activity: 2026-02-19 — Plan 10-02 completed (setup-commands CLI)
 
-Progress: [░░░░░░░░░░░░░░░░] 0%
+Progress: [███░░░░░░░░░░░░░░░] 18%
 
 ## Accumulated Context
 
@@ -28,11 +28,14 @@ Decisions are logged in PROJECT.md Key Decisions table.
   `~/.claude/commands/v.md`
 - Single v.md file with `$ARGUMENTS` subcommand routing (not per-command files)
 - Multi-layer defense for stringification: docs + defensive parsing + errors
+- [Phase 10-02]: Silent overwrite of existing v.md (no confirmation) for setup-commands
 
 ### Pending Todos
 
-- [ ] User approve roadmap
-- [ ] Start Phase 10 (Command Infrastructure)
+- [x] User approve roadmap
+- [x] Start Phase 10 (Command Infrastructure)
+- [x] Complete plan 10-02 (setup-commands CLI)
+- [ ] Complete plan 10-03 (cleanup skill subcommand)
 
 ### Blockers/Concerns
 
@@ -42,6 +45,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-18 — Phase 10 context gathered
-Stopped at: Ready to plan Phase 10
-Resume file: .planning/phases/10-command-infrastructure/10-CONTEXT.md
+Last session: 2026-02-19 — Plan 10-02 completed
+Stopped at: Ready for plan 10-03
+Resume file: .planning/phases/10-command-infrastructure/10-02-SUMMARY.md

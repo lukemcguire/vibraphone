@@ -8,12 +8,12 @@ serialization guessing.
 
 ### Slash Commands
 
-- [ ] **SLASH-01**: User can invoke core workflow tools via /v commands (list, next,
+- [x] **SLASH-01**: User can invoke core workflow tools via /v commands (list, next,
   start, test, lint, format, review, commit, merge, cleanup, complete, recover, status,
   health)
-- [ ] **SLASH-02**: User can invoke dict-heavy tools via /v commands (init,
+- [x] **SLASH-02**: User can invoke dict-heavy tools via /v commands (init,
   configure-stack, import-plan) with proper parameter handling
-- [ ] **SLASH-03**: Stringification bug is investigated, root cause identified, and fixed
+- [x] **SLASH-03**: Stringification bug is investigated, root cause identified, and fixed
   or documented
 - [ ] **SLASH-04**: Documentation includes /v command usage (README update, SKILL.md
   disposition)
@@ -34,9 +34,9 @@ serialization guessing.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SLASH-01 | Phase 10 | Pending |
-| SLASH-02 | Phase 10 | Pending |
-| SLASH-03 | Phase 10 | Pending |
+| SLASH-01 | Phase 10 | Complete |
+| SLASH-02 | Phase 10 | Complete |
+| SLASH-03 | Phase 10 | Complete |
 | SLASH-04 | Phase 10 | Pending |
 | SLASH-05 | Phase 10 | Pending |
 | SLASH-06 | Phase 10 | Pending |
@@ -49,4 +49,4 @@ serialization guessing.
 
 ---
 *Requirements defined: 2026-02-18*
-*Last updated: 2026-02-18 after initial definition*
+*Last updated: 2026-02-19 after plan 10-01 completion*
