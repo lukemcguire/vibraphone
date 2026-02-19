@@ -48,6 +48,57 @@ uv tool install vibraphone
 - An OpenAI-compatible API key for code review (set `OPENAI_API_KEY` environment
   variable)
 
+## Slash Commands
+
+Vibraphone includes `/v` slash commands for Claude Code. These provide a
+user-friendly interface to vibraphone MCP tools.
+
+### Installation
+
+```bash
+vibraphone setup-commands
+```
+
+This installs `v.md` to `~/.claude/commands/v.md`. Restart Claude Code after
+installation to use `/v` commands.
+
+### Available Commands
+
+| Command                        | Description                                |
+| ------------------------------ | ------------------------------------------ |
+| `/v init`                      | Initialize vibraphone in current project   |
+| `/v list`                      | List tasks from Beads                      |
+| `/v next`                      | Get next ready task                        |
+| `/v start <task_id>`           | Start task in isolated worktree            |
+| `/v test`                      | Run tests                                  |
+| `/v lint`                      | Run linter                                 |
+| `/v format`                    | Run formatter                              |
+| `/v review`                    | Request code review                        |
+| `/v commit <message>`          | Attempt commit (requires review approval)  |
+| `/v merge <task_id>`           | Merge task branch to main                  |
+| `/v cleanup <task_id>`         | Remove worktree and delete branch          |
+| `/v complete <task_id>`        | Mark task as completed                     |
+| `/v cycle`                     | Run test -> lint -> format -> review       |
+| `/v finish <task_id> <msg>`    | Complete workflow: commit -> merge -> cleanup -> complete |
+| `/v status`                    | Show current session state                 |
+| `/v health`                    | Show project health metrics                |
+| `/v recover`                   | Resume interrupted session                 |
+
+### MCP Tool Calling Convention
+
+When using vibraphone MCP tools directly (not via `/v` commands), dict and
+list parameters must be passed as JSON objects/arrays, NOT as JSON strings.
+
+| WRONG                          | RIGHT                        |
+| ------------------------------ | ---------------------------- |
+| `values: "{\"lang\": \"go\"}"` | `values: {"lang": "go"}`     |
+| `files: "[\"a.py\", \"b.py\"]"`| `files: ["a.py", "b.py"]`    |
+
+The MCP protocol handles JSON serialization automatically. Never manually
+serialize dicts/lists to strings.
+
+For complete command documentation, see the installed `v.md` file.
+
 ## Quickstart (5 minutes)
 
 ### 1. Initialize Vibraphone in your project
