@@ -1,7 +1,7 @@
 """Vibraphone CLI - command-line interface for vibraphone utilities.
 
 This module provides CLI commands for vibraphone, including:
-- skill install: Install the vibraphone slash-command skill
+- setup-commands: Install the /v slash command file
 """
 
 from __future__ import annotations
@@ -11,36 +11,8 @@ import shutil
 import sys
 from pathlib import Path
 
-SKILL_NAME = "v"
-SKILL_DEST_PATH = Path.home() / ".claude" / "skills" / SKILL_NAME
-
 COMMAND_NAME = "v"
 COMMAND_DEST_PATH = Path.home() / ".claude" / "commands" / f"{COMMAND_NAME}.md"
-
-
-def get_bundled_skill_path() -> Path | None:
-    """Get the path to the bundled skill directory.
-
-    Returns:
-        Path to the bundled skill directory, or None if not found.
-    """
-    # Try importlib.resources first (works for installed packages)
-    try:
-        from importlib.resources import files
-
-        skill_dir = files("vibraphone.skills").joinpath(SKILL_NAME)
-        if skill_dir.is_dir():
-            # Return the path as a Path object
-            return Path(str(skill_dir))
-    except (ImportError, TypeError):
-        pass
-
-    # Fallback: check relative to this file (development mode)
-    dev_path = Path(__file__).parent / "skills" / SKILL_NAME
-    if dev_path.is_dir():
-        return dev_path
-
-    return None
 
 
 def get_bundled_command_path() -> Path | None:
@@ -65,61 +37,6 @@ def get_bundled_command_path() -> Path | None:
         return dev_path
 
     return None
-
-
-def cmd_skill_install() -> int:
-    """Install the vibraphone skill to ~/.claude/skills/.
-
-    Returns:
-        0 on success, 1 on error.
-    """
-    # Get bundled skill directory
-    bundled_path = get_bundled_skill_path()
-    if bundled_path is None:
-        print("Error: Bundled skill directory not found in package.", file=sys.stderr)
-        return 1
-
-    # Remove existing installation if present
-    if SKILL_DEST_PATH.exists():
-        try:
-            shutil.rmtree(SKILL_DEST_PATH)
-        except OSError as e:
-            print(f"Error removing existing skill: {e}", file=sys.stderr)
-            return 1
-
-    # Ensure parent directory exists
-    SKILL_DEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    # Copy the skill directory
-    try:
-        shutil.copytree(bundled_path, SKILL_DEST_PATH)
-    except OSError as e:
-        print(f"Error copying skill directory: {e}", file=sys.stderr)
-        return 1
-
-    print(f"Skill installed to {SKILL_DEST_PATH}/")
-    print("\nYou can now use /v commands in Claude Code:")
-    print("  /v init --language python")
-    print("  /v list --status ready")
-    print("  /v next")
-    print("\nRestart Claude Code if it's already running.")
-
-    return 0
-
-
-def cmd_skill_status() -> int:
-    """Check if the skill is installed.
-
-    Returns:
-        0 if installed, 1 if not installed.
-    """
-    skill_md = SKILL_DEST_PATH / "SKILL.md"
-    if SKILL_DEST_PATH.is_dir() and skill_md.exists():
-        print(f"Skill is installed at {SKILL_DEST_PATH}/")
-        return 0
-    print("Skill is not installed.")
-    print("Run 'vibraphone-cli skill install' to install it.")
-    return 1
 
 
 def cmd_setup_commands() -> int:
@@ -150,23 +67,6 @@ def cmd_setup_commands() -> int:
     return 0
 
 
-def cmd_skill(args: argparse.Namespace) -> int:
-    """Handle skill subcommands.
-
-    Args:
-        args: Parsed arguments with subcommand in args.skill_command.
-
-    Returns:
-        Exit code.
-    """
-    if args.skill_command == "install":
-        return cmd_skill_install()
-    if args.skill_command == "status":
-        return cmd_skill_status()
-    print(f"Unknown skill command: {args.skill_command}", file=sys.stderr)
-    return 1
-
-
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser for vibraphone CLI.
 
@@ -179,15 +79,6 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # skill subcommand
-    skill_parser = subparsers.add_parser("skill", help="Manage vibraphone skills")
-    skill_parser.add_argument(
-        "skill_command",
-        choices=["install", "status"],
-        help="Skill command to run (install, status)",
-    )
-    skill_parser.set_defaults(func=cmd_skill)
 
     # setup-commands subcommand
     setup_parser = subparsers.add_parser(
