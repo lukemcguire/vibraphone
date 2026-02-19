@@ -23,6 +23,7 @@ Repository = "https://github.com/lukemcguire/vibraphone"
 
 [project.scripts]
 vibraphone = "vibraphone.server:main"
+vibraphone-cli = "vibraphone.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -39,8 +40,8 @@ build-backend = "hatchling.build"
 
 # ─── Hatch Build Configuration ──────────────────────────
 [tool.hatch.build.targets.wheel]
-# Include templates directory in wheel for importlib.resources access
-artifacts = ["src/vibraphone/templates/"]
+# Include templates and commands directories in wheel for importlib.resources access
+artifacts = ["src/vibraphone/templates/", "src/vibraphone/commands/"]
 
 # ─── Ruff ─────────────────────────────────────────────
 [tool.ruff]
