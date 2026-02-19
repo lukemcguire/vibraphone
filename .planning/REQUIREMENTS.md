@@ -15,7 +15,7 @@ serialization guessing.
   configure-stack, import-plan) with proper parameter handling
 - [x] **SLASH-03**: Stringification bug is investigated, root cause identified, and fixed
   or documented
-- [ ] **SLASH-04**: Documentation includes /v command usage (README update, SKILL.md
+- [x] **SLASH-04**: Documentation includes /v command usage (README update, SKILL.md
   disposition)
 - [x] **SLASH-05**: User can run `vibraphone setup-commands` to install /v commands to
   ~/.claude/commands/v/
@@ -37,7 +37,7 @@ serialization guessing.
 | SLASH-01 | Phase 10 | Complete |
 | SLASH-02 | Phase 10 | Complete |
 | SLASH-03 | Phase 10 | Complete |
-| SLASH-04 | Phase 10 | Pending |
+| SLASH-04 | Phase 10 | Complete |
 | SLASH-05 | Phase 10 | Complete |
 | SLASH-06 | Phase 10 | Complete |
 
@@ -49,4 +49,4 @@ serialization guessing.
 
 ---
 *Requirements defined: 2026-02-18*
-*Last updated: 2026-02-19 after plan 10-01 completion*
+*Last updated: 2026-02-19 after plan 10-04 completion*

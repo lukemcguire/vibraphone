@@ -27,7 +27,7 @@
 <details>
 <summary>v0.1.1 Slash Commands (Phases 10-12) -- IN PROGRESS</summary>
 
-- [ ] Phase 10: Command Infrastructure (4/4 plans) -- gap closure
+- [x] Phase 10: Command Infrastructure (4/4 plans) -- completed 2026-02-19
 
   **Goal:** Establish /v slash command installation mechanism with CLI command and
   bundled v.md file.
@@ -36,7 +36,7 @@
   - [x] 10-01-PLAN.md -- Create commands/ package with v.md slash command file
   - [x] 10-02-PLAN.md -- Add setup-commands CLI subcommand with unit tests
   - [x] 10-03-PLAN.md -- Clean up obsolete skill-based implementation
-  - [ ] 10-04-PLAN.md -- Add /v command documentation to README.md (gap closure)
+  - [x] 10-04-PLAN.md -- Add /v command documentation to README.md (gap closure)
 - [ ] Phase 11: Command Documentation (0/9 plans) -- pending
 - [ ] Phase 12: Tool Hardening (0/8 plans) -- pending
 
@@ -66,7 +66,7 @@ serialization guessing.
 | 7. Scaffolding & Templates | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 8. Quality Gate Worktree Integration | v0.1.0 | 1/1 | Complete | 2026-02-17 |
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
-| 10. Command Infrastructure | v0.1.1 | 3/4 | Gap Closure | -- |
+| 10. Command Infrastructure | v0.1.1 | 4/4 | Complete | 2026-02-19 |
 | 11. Command Documentation | v0.1.1 | 0/9 | Pending | -- |
 | 12. Tool Hardening | v0.1.1 | 0/8 | Pending | -- |
 
