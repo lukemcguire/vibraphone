@@ -11,11 +11,11 @@ review) before it can be committed — enforced by tooling, not by prompting.
 ## Current Position
 
 Phase: 10-command-infrastructure
-Plan: 02 complete
-Status: In progress - 10-02 complete, continuing to 10-03
-Last activity: 2026-02-19 — Plan 10-02 completed (setup-commands CLI)
+Plan: 03 complete
+Status: Phase 10 complete - ready for Phase 11
+Last activity: 2026-02-19 — Plan 10-03 completed (cleanup skill subcommand)
 
-Progress: [███░░░░░░░░░░░░░░░] 18%
+Progress: [████░░░░░░░░░░░░░░] 25%
 
 ## Accumulated Context
 
@@ -29,13 +29,16 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Single v.md file with `$ARGUMENTS` subcommand routing (not per-command files)
 - Multi-layer defense for stringification: docs + defensive parsing + errors
 - [Phase 10-02]: Silent overwrite of existing v.md (no confirmation) for setup-commands
+- [Phase 10-03]: Removed skill subcommand entirely per locked decision (no compatibility alias)
 
 ### Pending Todos
 
 - [x] User approve roadmap
 - [x] Start Phase 10 (Command Infrastructure)
+- [x] Complete plan 10-01 (create v.md)
 - [x] Complete plan 10-02 (setup-commands CLI)
-- [ ] Complete plan 10-03 (cleanup skill subcommand)
+- [x] Complete plan 10-03 (cleanup skill subcommand)
+- [ ] Start Phase 11 (Command Documentation)
 
 ### Blockers/Concerns
 
@@ -45,6 +48,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-19 — Plan 10-02 completed
-Stopped at: Ready for plan 10-03
-Resume file: .planning/phases/10-command-infrastructure/10-02-SUMMARY.md
+Last session: 2026-02-19 — Plan 10-03 completed
+Stopped at: Phase 10 complete, ready for Phase 11
+Resume file: .planning/phases/10-command-infrastructure/10-03-SUMMARY.md

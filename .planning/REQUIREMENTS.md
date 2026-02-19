@@ -17,7 +17,7 @@ serialization guessing.
   or documented
 - [ ] **SLASH-04**: Documentation includes /v command usage (README update, SKILL.md
   disposition)
-- [ ] **SLASH-05**: User can run `vibraphone setup-commands` to install /v commands to
+- [x] **SLASH-05**: User can run `vibraphone setup-commands` to install /v commands to
   ~/.claude/commands/v/
 - [ ] **SLASH-06**: Existing artifacts (skills/v/, vibraphone-cli) are cleaned up or
   repurposed with clear migration path
@@ -38,7 +38,7 @@ serialization guessing.
 | SLASH-02 | Phase 10 | Complete |
 | SLASH-03 | Phase 10 | Complete |
 | SLASH-04 | Phase 10 | Pending |
-| SLASH-05 | Phase 10 | Pending |
+| SLASH-05 | Phase 10 | Complete |
 | SLASH-06 | Phase 10 | Pending |
 
 **Coverage:**
