@@ -19,7 +19,7 @@ serialization guessing.
   disposition)
 - [x] **SLASH-05**: User can run `vibraphone setup-commands` to install /v commands to
   ~/.claude/commands/v/
-- [ ] **SLASH-06**: Existing artifacts (skills/v/, vibraphone-cli) are cleaned up or
+- [x] **SLASH-06**: Existing artifacts (skills/v/, vibraphone-cli) are cleaned up or
   repurposed with clear migration path
 
 ## Out of Scope
@@ -39,7 +39,7 @@ serialization guessing.
 | SLASH-03 | Phase 10 | Complete |
 | SLASH-04 | Phase 10 | Pending |
 | SLASH-05 | Phase 10 | Complete |
-| SLASH-06 | Phase 10 | Pending |
+| SLASH-06 | Phase 10 | Complete |
 
 **Coverage:**
 
