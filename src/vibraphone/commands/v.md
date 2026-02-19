@@ -1,0 +1,466 @@
+---
+name: v
+description:
+  Vibraphone slash commands for MCP tool orchestration. Use when the user
+  invokes /v commands or asks about vibraphone task management.
+argument-hint: <command> [args...] -- init|list|next|start|test|commit|...
+allowed-tools:
+  - mcp__vibraphone
+---
+
+# Vibraphone Slash Commands
+
+User-friendly slash commands for vibraphone MCP tools.
+
+## MCP Tool Calling Convention
+
+When calling vibraphone MCP tools, **dict and list parameters must be passed as
+JSON objects/arrays, NOT as JSON strings**.
+
+| WRONG                          | RIGHT                        |
+| ------------------------------ | ---------------------------- |
+| `values: "{\"lang\": \"go\"}"` | `values: {"lang": "go"}`     |
+| `files: "[\"a.py\", \"b.py\"]"`| `files: ["a.py", "b.py"]`    |
+| `components: "{...}"`          | `components: {...}`          |
+
+The MCP protocol handles JSON serialization automatically. Never manually
+serialize dicts/lists to strings.
+
+## Commands
+
+### `/v init [--language LANG] [--name NAME] [--apply]`
+
+Initialize vibraphone in the current project.
+
+- `--language` / `-l`: Programming language (python, go, rust, node)
+- `--name` / `-n`: Project name (defaults to directory name)
+- `--apply`: Skip preview and write files immediately
+
+**MCP Tool**: `vibraphone_init_project`
+
+| Parameter    | Type    | Default | Required |
+| ------------ | ------- | ------- | -------- |
+| project_path | string  | null    | No       |
+| values       | object  | null    | No       |
+| preview      | boolean | true    | No       |
+
+**Default call** (no options):
+
+```json
+{"preview": true}
+```
+
+**With options**:
+
+```json
+{
+  "preview": false,
+  "values": {
+    "language": "go",
+    "project_name": "myapp"
+  }
+}
+```
+
+**Flow**:
+
+1. If no `--apply`: Call with `preview: true`, show preview, ask to confirm
+2. With `--apply` or after confirmation: Call with `preview: false` and
+   `values: {...}`
+
+### `/v check-prereqs`
+
+Check for required dependencies (br, bv, git, just, node/npx).
+
+**MCP Tool**: `vibraphone_check_prerequisites`
+
+No parameters required.
+
+### `/v configure-stack [--stitch PROJECT_ID]`
+
+Configure test/lint/format commands.
+
+- `--stitch`: Enable Stitch MCP integration with project ID
+
+**MCP Tool**: `vibraphone_configure_stack`
+
+| Parameter         | Type    | Default | Required |
+| ----------------- | ------- | ------- | -------- |
+| components        | object  | -       | Yes      |
+| stitch_project_id | string  | null    | No       |
+| preview           | boolean | true    | No       |
+
+**Call with components**:
+
+```json
+{
+  "components": {
+    "server": {
+      "language": "python",
+      "root": "./src",
+      "test_command": "pytest",
+      "lint_command": "ruff check .",
+      "format_command": "ruff format ."
+    }
+  },
+  "preview": true
+}
+```
+
+**Flow**:
+
+1. Understand project components
+2. Call with `preview: true`
+3. Show proposed config, ask to confirm
+4. Call with `preview: false`
+
+### `/v list [--status STATUS] [--plan PLAN]`
+
+List tasks from Beads.
+
+- `--status`: Filter by status (ready, in_progress, completed, blocked)
+- `--plan`: Filter by plan ID (e.g., "06-02")
+
+**MCP Tool**: `vibraphone_list_tasks`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| status    | string | null    | No       |
+| plan      | string | null    | No       |
+
+**Default call** (no options):
+
+```json
+{}
+```
+
+**With filters**:
+
+```json
+{
+  "status": "ready",
+  "plan": "06-02"
+}
+```
+
+### `/v next`
+
+Get the next ready task using critical path analysis.
+
+**MCP Tool**: `vibraphone_next_ready`
+
+No parameters required.
+
+### `/v import-plan <phase>`
+
+Import GSD phase plans into Beads tasks.
+
+- `<phase>`: Phase number (required)
+
+**MCP Tool**: `vibraphone_import_gsd_plan`
+
+| Parameter    | Type    | Default | Required |
+| ------------ | ------- | ------- | -------- |
+| phase_number | integer | -       | Yes      |
+| preview      | boolean | true    | No       |
+
+**Call**:
+
+```json
+{
+  "phase_number": 6,
+  "preview": true
+}
+```
+
+**Flow**:
+
+1. Call with `preview: true`
+2. Show what would be imported, ask to confirm
+3. Call with `preview: false`
+
+### `/v start <task_id>`
+
+Start a task in an isolated worktree.
+
+- `<task_id>`: Task ID (required, e.g., bd-abc123)
+
+**MCP Tool**: `vibraphone_start_task`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| task_id   | string | -       | Yes      |
+
+**Call**:
+
+```json
+{
+  "task_id": "bd-abc123"
+}
+```
+
+### `/v test [--component NAME]`
+
+Run tests.
+
+- `--component`: Component name to test (optional)
+
+**MCP Tool**: `vibraphone_run_tests`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| component | string | null    | No       |
+
+**Default call** (no options):
+
+```json
+{}
+```
+
+### `/v lint [--component NAME]`
+
+Run linter.
+
+- `--component`: Component name to lint (optional)
+
+**MCP Tool**: `vibraphone_run_lint`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| component | string | null    | No       |
+
+**Default call** (no options):
+
+```json
+{}
+```
+
+### `/v format [--component NAME]`
+
+Run formatter.
+
+- `--component`: Component name to format (optional)
+
+**MCP Tool**: `vibraphone_run_format`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| component | string | null    | No       |
+
+**Default call** (no options):
+
+```json
+{}
+```
+
+### `/v review [--files FILE1,FILE2,...]`
+
+Request code review.
+
+- `--files`: Comma-separated list of files (optional)
+
+**MCP Tool**: `vibraphone_request_code_review`
+
+| Parameter | Type          | Default | Required |
+| --------- | ------------- | ------- | -------- |
+| task_id   | string        | null    | No       |
+| files     | array[string] | null    | No       |
+
+**Default call** (no options):
+
+```json
+{}
+```
+
+**With files**:
+
+```json
+{
+  "files": ["src/main.py", "src/utils.py"]
+}
+```
+
+### `/v commit <message>`
+
+Attempt to commit changes.
+
+- `<message>`: Commit message (required)
+
+**MCP Tool**: `vibraphone_attempt_commit`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| task_id   | string | null    | No       |
+| message   | string | ""      | No       |
+
+**Call**:
+
+```json
+{
+  "message": "feat: add user authentication"
+}
+```
+
+### `/v merge <task_id>`
+
+Merge task branch into main.
+
+- `<task_id>`: Task ID (required, e.g., bd-abc123)
+
+**MCP Tool**: `vibraphone_merge_task`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| task_id   | string | -       | Yes      |
+
+**Call**:
+
+```json
+{
+  "task_id": "bd-abc123"
+}
+```
+
+### `/v cleanup <task_id>`
+
+Remove worktree and delete branch.
+
+- `<task_id>`: Task ID (required, e.g., bd-abc123)
+
+**MCP Tool**: `vibraphone_cleanup_task`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| task_id   | string | -       | Yes      |
+
+**Call**:
+
+```json
+{
+  "task_id": "bd-abc123"
+}
+```
+
+### `/v complete <task_id> [--notes NOTES]`
+
+Mark task as completed.
+
+- `<task_id>`: Task ID (required, e.g., bd-abc123)
+- `--notes`: Optional completion notes
+
+**MCP Tool**: `vibraphone_complete_task`
+
+| Parameter | Type   | Default | Required |
+| --------- | ------ | ------- | -------- |
+| task_id   | string | -       | Yes      |
+| notes     | string | null    | No       |
+
+**Call**:
+
+```json
+{
+  "task_id": "bd-abc123"
+}
+```
+
+**With notes**:
+
+```json
+{
+  "task_id": "bd-abc123",
+  "notes": "Completed feature X"
+}
+```
+
+### `/v recover`
+
+Resume interrupted session.
+
+**MCP Tool**: `vibraphone_recover_session`
+
+No parameters required.
+
+### `/v status`
+
+Show current session/project state.
+
+**MCP Tool**: `vibraphone_recover_session`
+
+No parameters required.
+
+### `/v health`
+
+Show project health metrics.
+
+**MCP Tool**: `vibraphone_health_check`
+
+No parameters required.
+
+## Workflow Shortcuts
+
+### `/v cycle`
+
+Run test -> lint -> format -> review in sequence.
+
+**MCP Tools called in order**:
+
+1. `vibraphone_run_tests` with `{}`
+2. `vibraphone_run_lint` with `{}`
+3. `vibraphone_run_format` with `{}`
+4. `vibraphone_request_code_review` with `{}`
+
+**Flow**:
+
+1. Run tests, if pass continue
+2. Run lint, if pass continue
+3. Run format, if pass continue
+4. Request code review
+5. Report final status
+
+### `/v finish <task_id> <message>`
+
+Complete workflow: commit -> merge -> cleanup -> complete.
+
+- `<task_id>`: Task ID (required, e.g., bd-abc123)
+- `<message>`: Commit message (required)
+
+**MCP Tools called in order**:
+
+1. `vibraphone_attempt_commit` with `{"task_id": "...", "message": "..."}`
+2. `vibraphone_merge_task` with `{"task_id": "..."}`
+3. `vibraphone_cleanup_task` with `{"task_id": "..."}`
+4. `vibraphone_complete_task` with `{"task_id": "..."}`
+
+**Flow**:
+
+1. Attempt commit, if success continue
+2. Merge task branch
+3. Cleanup worktree
+4. Mark task complete
+5. Report final status
+
+## Argument Parsing
+
+1. **Flags with values**: `--language go` -> extract `go`
+2. **Short flags**: `-l go` -> same as `--language go`
+3. **Positional args**: `/v start bd-abc123` -> task_id = "bd-abc123"
+4. **Boolean flags**: `--apply` -> true if present
+5. **Comma-separated**: `--files a.py,b.py` -> `["a.py", "b.py"]`
+
+## Error Handling
+
+When a tool returns an error:
+
+1. Show the error message clearly
+2. Show `next_steps` if available
+3. Offer to help resolve the issue
+
+## Context Detection
+
+Vibraphone tools auto-find `vibraphone.yaml` by walking up from CWD. Users
+don't need to specify the project root.
+
+If no `vibraphone.yaml` found:
+
+- Project commands (list, start, etc.) will error
+- Global commands (check-prereqs, init) still work
