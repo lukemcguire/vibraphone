@@ -54,7 +54,7 @@ user-friendly interface to vibraphone MCP tools.
 ### Installation
 
 ```bash
-vibraphone setup-commands
+vibraphone-cli setup-commands
 ```
 
 This installs `v.md` to `~/.claude/commands/v.md`. Restart Claude Code after
