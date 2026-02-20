@@ -194,6 +194,15 @@ async def init_project(
     Returns:
         Dict with status, detected/final values, files info, conflicts, next_steps.
     """
+    # Defensive check for stringified values parameter
+    if values is not None and isinstance(values, str):
+        return _build_stringification_error(
+            param_name="values",
+            received=values,
+            example_wrong='values: "{\\"project_name\\": \\"my-app\\"}"',
+            example_right='values: {"project_name": "my-app"}',
+        )
+
     # Determine project root
     project_root = Path(project_path) if project_path else Path.cwd()
     if not project_root.exists():
