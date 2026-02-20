@@ -82,19 +82,6 @@ installation to use `/v` commands.
 | `/v health`                    | Show project health metrics                |
 | `/v recover`                   | Resume interrupted session                 |
 
-### MCP Tool Calling Convention
-
-When using vibraphone MCP tools directly (not via `/v` commands), dict and
-list parameters must be passed as JSON objects/arrays, NOT as JSON strings.
-
-| WRONG                          | RIGHT                        |
-| ------------------------------ | ---------------------------- |
-| `values: "{\"lang\": \"go\"}"` | `values: {"lang": "go"}`     |
-| `files: "[\"a.py\", \"b.py\"]"`| `files: ["a.py", "b.py"]`    |
-
-The MCP protocol handles JSON serialization automatically. Never manually
-serialize dicts/lists to strings.
-
 For complete command documentation, see the installed `v.md` file.
 
 ## Quickstart (5 minutes)
