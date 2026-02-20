@@ -328,7 +328,8 @@ async def init_project(
     project_root, error = _validate_init_params(project_path, values)
     if error:
         return error
-    assert project_root is not None  # Type narrowing: we returned above if error
+    if project_root is None:  # Type narrowing guard (should never happen)
+        raise RuntimeError
 
     # Auto-detect values
     _progress("Detecting project metadata")
