@@ -37,6 +37,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 12-02]: Duplicated _build_stringification_error helper in stack_tools.py per locked decision (inline helpers simpler than cross-file imports for 3 tools)
 - [Phase 12-01]: Helper function stays local to scaffold_tools.py (not shared utils)
 - [Phase 12-01]: Error includes truncated received value (100 char max) for debugging
+- [Phase 10-05]: README.md scope is user-facing; technical MCP protocol content belongs in v.md
 
 ### Pending Todos
 
@@ -46,6 +47,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [x] Complete plan 10-02 (setup-commands CLI)
 - [x] Complete plan 10-03 (cleanup skill subcommand)
 - [x] Complete plan 10-04 (README documentation gap closure)
+- [x] Complete plan 10-05 (README gap closure - CLI command and MCP section)
 - [x] Start Phase 11 (Command Documentation)
 - [x] Complete plan 11-01 (command structure reorganization)
 - [x] Complete plan 11-02 (Start Work and Run Quality command documentation)
@@ -65,6 +67,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-20 — Plan 12-04 executed
-Stopped at: Completed Phase 12 (Tool Hardening)
+Last session: 2026-02-20 — Plan 10-05 executed
+Stopped at: Completed Phase 10-05 (README gap closure)
 Resume file: Check ROADMAP.md for next phase
