@@ -11,11 +11,11 @@ review) before it can be committed — enforced by tooling, not by prompting.
 ## Current Position
 
 Phase: 11-command-documentation
-Plan: 02 complete
-Status: Plan 11-02 complete (Start Work and Run Quality command documentation)
-Last activity: 2026-02-20 — Plan 11-02 completed (full coverage for 7 commands)
+Plan: 03 complete
+Status: Plan 11-03 complete (Commit & Merge, Session Management, Troubleshooting)
+Last activity: 2026-02-20 — Plan 11-03 completed (full coverage for 7 more commands + troubleshooting)
 
-Progress: [████████░░░░░░░░░░░░] 40%
+Progress: [████████████░░░░░░░░░░] 60%
 
 ## Accumulated Context
 
@@ -32,6 +32,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 10-03]: Removed skill subcommand entirely per locked decision (no compatibility alias)
 - [Phase 11]: 4-group workflow structure (Start Work, Run Quality, Commit & Merge, Session Management) mirrors how users work through tasks
 - [Phase 11]: Dict-heavy commands (init, configure-stack, import-plan) get expanded documentation with typical/edge/mistake examples
+- [Phase 11-command-documentation]: Troubleshooting section follows dual approach: inline command errors + centralized section for cross-cutting issues
+- [Phase 11-command-documentation]: Quality gate, worktree, and session issues grouped for discoverability
 
 ### Pending Todos
 
@@ -44,6 +46,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [x] Start Phase 11 (Command Documentation)
 - [x] Complete plan 11-01 (command structure reorganization)
 - [x] Complete plan 11-02 (Start Work and Run Quality command documentation)
+- [x] Complete plan 11-03 (Commit & Merge, Session Management, Troubleshooting)
 
 ### Blockers/Concerns
 
@@ -53,6 +56,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-20 — Plan 11-02 completed
-Stopped at: Phase 11 Plan 02 complete, ready for Plan 11-03
-Resume file: .planning/phases/11-command-documentation/11-02-SUMMARY.md
+Last session: 2026-02-20 — Plan 11-03 completed
+Stopped at: Phase 11 Plan 03 complete, ready for Plan 11-04
+Resume file: .planning/phases/11-command-documentation/11-03-SUMMARY.md
