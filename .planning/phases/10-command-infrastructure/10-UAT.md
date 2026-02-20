@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 10-command-infrastructure
-source: [10-01-SUMMARY.md, 10-02-SUMMARY.md, 10-03-SUMMARY.md, 10-04-SUMMARY.md]
+source: [10-01-SUMMARY.md, 10-02-SUMMARY.md, 10-03-SUMMARY.md, 10-04-SUMMARY.md, 10-05-SUMMARY.md]
 started: 2026-02-20T16:00:00Z
-updated: 2026-02-20T16:06:00Z
+updated: 2026-02-20T18:10:00Z
 ---
 
 ## Current Test
@@ -60,21 +60,34 @@ skipped: 0
 ## Gaps
 
 - truth: "Running vibraphone setup-commands --help shows usage information"
-  status: failed
+  status: resolved
   reason: "User reported: not exactly, there's a `vibraphone-cli` command that has this, the `vibraphone` command is for the MCP server"
   severity: minor
   test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Documentation was written assuming a single `vibraphone` command would serve both MCP server and CLI purposes, but the implementation evolved to use two separate entry points (`vibraphone` for MCP server, `vibraphone-cli` for CLI) without updating the user-facing documentation accordingly."
+  artifacts:
+    - path: "README.md"
+      line: 57
+      issue: "References `vibraphone setup-commands` but should be `vibraphone-cli setup-commands`"
+  missing:
+    - "Update README.md line 57 to use `vibraphone-cli setup-commands`"
+  debug_session: "completed"
+  resolved_by: "10-05-PLAN.md"
+  resolved_at: "2026-02-20"
 
 - truth: "README Slash Commands section has accurate command names and appropriate scope"
-  status: failed
+  status: resolved
   reason: "User reported: references `vibraphone` not `vibraphone-cli`; the MCP Tool calling section is too under the hood compared to the scope of the rest of the README"
   severity: minor
   test: 6
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "The MCP Tool Calling Convention subsection in README.md contains low-level protocol implementation details (JSON serialization behavior) that are appropriate for the v.md slash command file (where agents need this to call tools correctly) but inappropriate for a project README (where users need high-level usage guidance)."
+  artifacts:
+    - path: "README.md"
+      lines: "85-97"
+      issue: "MCP Tool Calling Convention section explains MCP protocol internals and direct tool calling, which is too technical for README audience"
+  missing:
+    - "Remove lines 85-97 from README.md (the entire MCP Tool Calling Convention subsection)"
+    - "v.md already contains this content, making the README section redundant"
+  debug_session: "completed"
+  resolved_by: "10-05-PLAN.md"
+  resolved_at: "2026-02-20"
