@@ -269,6 +269,15 @@ async def configure_stack(
     Returns:
         dict with status, justfile content (preview) or path (written), vibraphone_yaml content (preview) or path (written).
     """
+    # Defensive check for stringified components parameter
+    if isinstance(components, str):
+        return _build_stringification_error(
+            param_name="components",
+            received=components,
+            example_wrong='components: "{\\"backend\\": {\\"language\\": \\"python\\"}}"',
+            example_right='components: {"backend": {"language": "python"}}',
+        )
+
     # Get project root
     project_root = get_project_root()
 
