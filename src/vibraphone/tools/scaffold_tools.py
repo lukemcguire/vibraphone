@@ -150,6 +150,136 @@ def _check_conflicts(project_root: Path, proposed_files: dict[str, str]) -> tupl
     return non_conflicting, conflicts
 
 
+def _validate_init_params(
+    project_path: str | None,
+    values: dict[str, Any] | None,
+) -> tuple[Path, dict[str, Any] | None] | tuple[None, dict[str, Any]]:
+    """Validate init_project parameters.
+
+    Returns:
+        Tuple of (project_root, None) if valid, or (None, error_dict) if invalid.
+    """
+    # Defensive check for stringified values parameter
+    if values is not None and isinstance(values, str):
+        return None, _build_stringification_error(
+            param_name="values",
+            received=values,
+            example_wrong='values: "{\\"project_name\\": \\"my-app\\"}"',
+            example_right='values: {"project_name": "my-app"}',
+        )
+
+    # Determine project root
+    project_root = Path(project_path) if project_path else Path.cwd()
+    if not project_root.exists():
+        return None, {
+            "status": "error",
+            "error": f"Project path does not exist: {project_root}",
+            "next_steps": ["Create the directory first or specify an existing path."],
+        }
+
+    return project_root, None
+
+
+def _check_init_prerequisites() -> dict[str, Any] | None:
+    """Check prerequisites for init_project.
+
+    Returns:
+        Error dict if prerequisites missing, None if all OK.
+    """
+    prereqs = check_prereqs()
+    missing_core = prereqs.get("missing_core", [])
+    if missing_core:
+        _progress("Checking prerequisites", "FAIL")
+        return {
+            "status": "error",
+            "error": f"Missing required tools: {', '.join(missing_core)}",
+            "prerequisites": prereqs,
+            "next_steps": [
+                "Install missing tools using the shell_script below.",
+                prereqs.get("shell_script", ""),
+            ],
+        }
+    return None
+
+
+def _write_non_conflicting_files(
+    project_root: Path,
+    non_conflicting: dict[str, str],
+) -> list[str]:
+    """Write non-conflicting files to disk.
+
+    Returns list of relative paths written.
+    """
+    files_written: list[str] = []
+    for rel_path, content in non_conflicting.items():
+        full_path = project_root / rel_path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_text(content, encoding="utf-8")
+        files_written.append(rel_path)
+    return files_written
+
+
+def _handle_gitignore_append(project_root: Path) -> str | None:
+    """Append vibraphone entries to .gitignore.
+
+    Returns:
+        File description if written/appended, None if skipped.
+    """
+    try:
+        gitignore_append = load_template("gitignore_append.txt")
+    except FileNotFoundError:
+        return None
+
+    gitignore_path = project_root / ".gitignore"
+    if gitignore_path.exists():
+        existing = gitignore_path.read_text(encoding="utf-8")
+        if ".vibraphone/" not in existing:
+            gitignore_path.write_text(
+                existing.rstrip() + "\n\n# Vibraphone\n" + gitignore_append,
+                encoding="utf-8",
+            )
+            return ".gitignore (appended)"
+    else:
+        gitignore_path.write_text(
+            "# Vibraphone\n" + gitignore_append,
+            encoding="utf-8",
+        )
+        return ".gitignore"
+    return None
+
+
+def _handle_justfile_creation(project_root: Path, project_name: str) -> str | None:
+    """Create minimal Justfile if it doesn't exist.
+
+    Returns:
+        "Justfile" if created, None if already exists.
+    """
+    justfile_path = project_root / "Justfile"
+    if justfile_path.exists():
+        return None
+
+    justfile_content = f"""# {project_name} - Justfile
+
+# Bootstrap project dependencies
+bootstrap:
+    @echo "Project bootstrapped!"
+
+# Run tests
+test:
+    @echo "Configure with configure_stack tool"
+
+# Run linter
+lint:
+    @echo "Configure with configure_stack tool"
+
+# Run formatter
+format:
+    @echo "Configure with configure_stack tool"
+"""
+    justfile_path.write_text(justfile_content, encoding="utf-8")
+    return "Justfile"
+
+
 @mcp.tool
 async def check_prerequisites() -> dict[str, Any]:
     """Check for required external dependencies and get install commands.
@@ -194,46 +324,22 @@ async def init_project(
     Returns:
         Dict with status, detected/final values, files info, conflicts, next_steps.
     """
-    # Defensive check for stringified values parameter
-    if values is not None and isinstance(values, str):
-        return _build_stringification_error(
-            param_name="values",
-            received=values,
-            example_wrong='values: "{\\"project_name\\": \\"my-app\\"}"',
-            example_right='values: {"project_name": "my-app"}',
-        )
-
-    # Determine project root
-    project_root = Path(project_path) if project_path else Path.cwd()
-    if not project_root.exists():
-        return {
-            "status": "error",
-            "error": f"Project path does not exist: {project_root}",
-            "next_steps": ["Create the directory first or specify an existing path."],
-        }
+    # Validate parameters
+    project_root, error = _validate_init_params(project_path, values)
+    if error:
+        return error
+    assert project_root is not None  # Type narrowing: we returned above if error
 
     # Auto-detect values
     _progress("Detecting project metadata")
     detected = detect_project_metadata(project_root)
-
-    # Merge with user-provided values
     final_values = {**detected, **(values or {})}
 
-    # Check prerequisites (auto-check per CONTEXT.md)
+    # Check prerequisites
     _progress("Checking prerequisites")
-    prereqs = check_prereqs()
-    missing_core = prereqs.get("missing_core", [])
-    if missing_core:
-        _progress("Checking prerequisites", "FAIL")
-        return {
-            "status": "error",
-            "error": f"Missing required tools: {', '.join(missing_core)}",
-            "prerequisites": prereqs,
-            "next_steps": [
-                "Install missing tools using the shell_script below.",
-                prereqs.get("shell_script", ""),
-            ],
-        }
+    prereq_error = _check_init_prerequisites()
+    if prereq_error:
+        return prereq_error
     _progress("Checking prerequisites", "OK")
 
     # Render all templates
@@ -251,7 +357,7 @@ async def init_project(
             "final_values": final_values,
             "files_to_create": list(proposed_files.keys()),
             "conflicts": [{"path": c["path"], "diff": c["diff"]} for c in conflicts],
-            "prerequisites": prereqs,
+            "prerequisites": check_prereqs(),
             "next_steps": [
                 "1. Review detected values and edit if needed",
                 "2. Review conflicts and decide: overwrite (yes) or skip (no) per file",
@@ -260,53 +366,17 @@ async def init_project(
         }
 
     # Write non-conflicting files
-    files_written: list[str] = []
-    for rel_path, content in non_conflicting.items():
-        full_path = project_root / rel_path
-        full_path.parent.mkdir(parents=True, exist_ok=True)
-        full_path.write_text(content, encoding="utf-8")
-        files_written.append(rel_path)
+    files_written = _write_non_conflicting_files(project_root, non_conflicting)
 
     # Handle .gitignore append (NEW-06)
-    try:
-        gitignore_append = load_template("gitignore_append.txt")
-        gitignore_path = project_root / ".gitignore"
-        if gitignore_path.exists():
-            existing = gitignore_path.read_text(encoding="utf-8")
-            if ".vibraphone/" not in existing:
-                gitignore_path.write_text(existing.rstrip() + "\n\n# Vibraphone\n" + gitignore_append, encoding="utf-8")
-                files_written.append(".gitignore (appended)")
-        else:
-            gitignore_path.write_text("# Vibraphone\n" + gitignore_append, encoding="utf-8")
-            files_written.append(".gitignore")
-    except FileNotFoundError:
-        # gitignore_append.txt template may not exist - skip silently
-        pass
+    gitignore_result = _handle_gitignore_append(project_root)
+    if gitignore_result:
+        files_written.append(gitignore_result)
 
     # Handle Justfile creation (NEW-05)
-    justfile_path = project_root / "Justfile"
-    if not justfile_path.exists():
-        # Create minimal Justfile with bootstrap recipe
-        justfile_content = f"""# {final_values["project_name"]} - Justfile
-
-# Bootstrap project dependencies
-bootstrap:
-    @echo "Project bootstrapped!"
-
-# Run tests
-test:
-    @echo "Configure with configure_stack tool"
-
-# Run linter
-lint:
-    @echo "Configure with configure_stack tool"
-
-# Run formatter
-format:
-    @echo "Configure with configure_stack tool"
-"""
-        justfile_path.write_text(justfile_content, encoding="utf-8")
-        files_written.append("Justfile")
+    justfile_result = _handle_justfile_creation(project_root, final_values["project_name"])
+    if justfile_result:
+        files_written.append(justfile_result)
 
     # Show celebration if complete
     if not conflicts:
