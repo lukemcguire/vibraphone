@@ -6,6 +6,7 @@ Uses tmp_path fixture for isolated testing.
 
 import json
 from pathlib import Path
+from typing import Literal, cast
 from unittest.mock import patch
 
 import pytest
@@ -58,7 +59,10 @@ class TestQualityGateState:
 
     def test_quality_gate_state_with_all_statuses(self) -> None:
         """State accepts APPROVED, REJECTED, ESCALATED status values."""
-        for status in ["APPROVED", "REJECTED", "ESCALATED"]:
+        for status in cast(
+            "list[Literal['APPROVED', 'REJECTED', 'ESCALATED']]",
+            ["APPROVED", "REJECTED", "ESCALATED"],
+        ):
             state = QualityGateState(task_id="001", last_review_status=status)
             assert state.last_review_status == status
 

@@ -4,9 +4,10 @@ This module provides factory functions for creating mock objects
 commonly needed in tests, reducing boilerplate across test files.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from tempfile import gettempdir
+from typing import Any, Literal
 from unittest.mock import MagicMock
 
 from vibraphone.utils.quality_state import QualityGateState
@@ -30,13 +31,13 @@ def create_mock_session(
     """
     if worktree_path is None:
         # Caller should provide actual path; this is fallback
-        worktree_path = Path("/tmp/test-worktree")
+        worktree_path = Path(gettempdir()) / "test-worktree"
 
     return SessionState(
         task_id=task_id,
         worktree_path=worktree_path,
         branch_name=branch_name,
-        started_at=datetime.now(),
+        started_at=datetime.now(UTC),
     )
 
 
@@ -44,9 +45,8 @@ def create_mock_quality_state(
     task_id: str = "default",
     test_attempts: int = 0,
     lint_attempts: int = 0,
-    format_attempts: int = 0,
     review_attempts: int = 0,
-    last_review_status: str | None = None,
+    last_review_status: Literal["APPROVED", "REJECTED", "ESCALATED"] | None = None,
     last_review_diff_hash: str | None = None,
 ) -> QualityGateState:
     """Create a mock QualityGateState for testing.
@@ -55,9 +55,8 @@ def create_mock_quality_state(
         task_id: Task identifier.
         test_attempts: Number of test attempts.
         lint_attempts: Number of lint attempts.
-        format_attempts: Number of format attempts.
         review_attempts: Number of review attempts.
-        last_review_status: Last review status (APPROVED, REJECTED, None).
+        last_review_status: Last review status (APPROVED, REJECTED, ESCALATED).
         last_review_diff_hash: Hash of last reviewed diff.
 
     Returns:
@@ -67,7 +66,6 @@ def create_mock_quality_state(
         task_id=task_id,
         test_attempts=test_attempts,
         lint_attempts=lint_attempts,
-        format_attempts=format_attempts,
         review_attempts=review_attempts,
         last_review_status=last_review_status,
         last_review_diff_hash=last_review_diff_hash,

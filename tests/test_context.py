@@ -8,8 +8,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
-import pytest
-
 from vibraphone.utils.session import SessionState
 
 
@@ -33,9 +31,7 @@ class TestGetExecutionContext:
         assert exec_dir == tmp_path
         assert session is None
 
-    def test_returns_project_root_when_worktree_missing(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    def test_returns_project_root_when_worktree_missing(self, mocker: Any, tmp_path: Path) -> None:
         """When session exists but worktree path doesn't exist, falls back."""
         from vibraphone.utils.context import get_execution_context
 
@@ -56,12 +52,11 @@ class TestGetExecutionContext:
         assert exec_dir == tmp_path
         assert session is None
 
-    def test_returns_worktree_when_session_exists(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    def test_returns_worktree_when_session_exists(self, mocker: Any, tmp_path: Path) -> None:
         """When session exists with valid worktree, returns worktree path."""
-        from vibraphone.utils.context import get_execution_context
         from datetime import datetime
+
+        from vibraphone.utils.context import get_execution_context
 
         # Mock get_project_root
         mocker.patch("vibraphone.utils.context.get_project_root", return_value=tmp_path)
@@ -88,9 +83,7 @@ class TestGetExecutionContext:
         assert returned_session is session
         assert returned_session.task_id == "001"
 
-    def test_uses_project_root_from_config(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    def test_uses_project_root_from_config(self, mocker: Any, tmp_path: Path) -> None:
         """SessionManager is initialized with project root from config."""
         from vibraphone.utils.context import get_execution_context
 

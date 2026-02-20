@@ -8,8 +8,6 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 class TestCmdSetupCommandsSuccess:
     """Tests for successful cmd_setup_commands execution."""
@@ -48,9 +46,7 @@ class TestCmdSetupCommandsSuccess:
         assert "Restart Claude Code" in output
         mock_copy.assert_called_once()
 
-    def test_cmd_setup_commands_creates_directory(
-        self, tmp_path: Path, mocker
-    ) -> None:
+    def test_cmd_setup_commands_creates_directory(self, tmp_path: Path, mocker) -> None:
         """cmd_setup_commands creates ~/.claude/commands/ if missing."""
         from vibraphone.cli import cmd_setup_commands
 
@@ -99,9 +95,7 @@ class TestCmdSetupCommandsErrors:
         assert "Bundled command file not found" in error_output
         assert "corrupt installation" in error_output
 
-    def test_cmd_setup_commands_permission_error(
-        self, tmp_path: Path, mocker
-    ) -> None:
+    def test_cmd_setup_commands_permission_error(self, tmp_path: Path, mocker) -> None:
         """cmd_setup_commands returns 1 on permission error."""
         from vibraphone.cli import cmd_setup_commands
 

@@ -4,7 +4,6 @@ Tests SessionState model and SessionManager with mocked file operations.
 Uses tmp_path fixture for isolated testing.
 """
 
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -144,17 +143,21 @@ class TestSessionManager:
 
     def test_load_handles_json_decode_error(self, tmp_path: Path) -> None:
         """load() raises JSONDecodeError for invalid JSON."""
+        import json
+
         session = SessionManager(tmp_path)
         session_file = tmp_path / ".vibraphone" / "session.json"
         session_file.parent.mkdir(parents=True, exist_ok=True)
         session_file.write_text("not valid json {")
 
-        with pytest.raises(Exception):  # json.JSONDecodeError
+        with pytest.raises(json.JSONDecodeError):
             session.load()
 
     def test_load_handles_missing_fields(self, tmp_path: Path) -> None:
         """load() raises ValidationError for missing required fields."""
         import json
+
+        from pydantic import ValidationError
 
         session = SessionManager(tmp_path)
         session_file = tmp_path / ".vibraphone" / "session.json"
@@ -162,5 +165,5 @@ class TestSessionManager:
         # Missing required fields
         session_file.write_text(json.dumps({"task_id": "bd-test"}))
 
-        with pytest.raises(Exception):  # ValidationError
+        with pytest.raises(ValidationError):
             session.load()

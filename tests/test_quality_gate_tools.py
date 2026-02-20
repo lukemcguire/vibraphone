@@ -4,6 +4,7 @@ Tests quality_gate_tools.py MCP tool implementations with mocked dependencies.
 Uses pytest-mock for mocking run_command, CircuitBreaker, and CodeReviewer.
 """
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -12,7 +13,6 @@ import pytest
 
 from vibraphone.utils.quality_state import QualityGateState
 from vibraphone.utils.session import SessionState
-from datetime import datetime
 
 
 @pytest.fixture
@@ -54,9 +54,7 @@ class TestRunTests:
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
         # Mock state manager
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="default")
         mock_state_manager_class.return_value = mock_state_manager
@@ -82,9 +80,7 @@ class TestRunTests:
         mock_config.circuit_breakers.tests.max_attempts = 5
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="default")
         mock_state_manager_class.return_value = mock_state_manager
@@ -114,9 +110,7 @@ class TestRunTests:
         mock_config.circuit_breakers.tests.max_attempts = 5
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="default")
         mock_state_manager_class.return_value = mock_state_manager
@@ -135,13 +129,9 @@ class TestRunTests:
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
         # State with high attempt count (already at max)
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
-        mock_state_manager.load.return_value = QualityGateState(
-            task_id="default", test_attempts=3
-        )
+        mock_state_manager.load.return_value = QualityGateState(task_id="default", test_attempts=3)
         mock_state_manager_class.return_value = mock_state_manager
 
         from vibraphone.tools.quality_gate_tools import run_tests
@@ -152,9 +142,7 @@ class TestRunTests:
         assert result["error_type"] == "CircuitBreakerTripped"
 
     @pytest.mark.asyncio
-    async def test_uses_worktree_when_session_exists(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_uses_worktree_when_session_exists(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """When session exists, commands run in worktree directory."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -173,9 +161,7 @@ class TestRunTests:
         mock_config.circuit_breakers.tests.max_attempts = 5
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="001")
         mock_state_manager_class.return_value = mock_state_manager
@@ -190,9 +176,7 @@ class TestRunTests:
         assert call_kwargs["cwd"] == worktree_path
 
     @pytest.mark.asyncio
-    async def test_uses_project_root_when_no_session(
-        self, mocker: Any, tmp_path: Path, mock_execution_context
-    ) -> None:
+    async def test_uses_project_root_when_no_session(self, mocker: Any, tmp_path: Path, mock_execution_context) -> None:
         """When no session, commands run in project root directory."""
         mock_run_command = mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
@@ -204,9 +188,7 @@ class TestRunTests:
         mock_config.circuit_breakers.tests.max_attempts = 5
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="default")
         mock_state_manager_class.return_value = mock_state_manager
@@ -257,9 +239,7 @@ class TestRunLint:
         assert mock_run_command.called
 
     @pytest.mark.asyncio
-    async def test_uses_worktree_when_session_exists(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_uses_worktree_when_session_exists(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """When session exists, lint runs in worktree directory."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -282,9 +262,7 @@ class TestRunLint:
         assert call_kwargs["cwd"] == worktree_path
 
     @pytest.mark.asyncio
-    async def test_uses_project_root_when_no_session(
-        self, mocker: Any, tmp_path: Path, mock_execution_context
-    ) -> None:
+    async def test_uses_project_root_when_no_session(self, mocker: Any, tmp_path: Path, mock_execution_context) -> None:
         """When no session, lint runs in project root directory."""
         mock_run_command = mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
@@ -321,9 +299,7 @@ class TestRunFormat:
         assert mock_run_command.called
 
     @pytest.mark.asyncio
-    async def test_uses_worktree_when_session_exists(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_uses_worktree_when_session_exists(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """When session exists, format runs in worktree directory."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -346,9 +322,7 @@ class TestRunFormat:
         assert call_kwargs["cwd"] == worktree_path
 
     @pytest.mark.asyncio
-    async def test_uses_project_root_when_no_session(
-        self, mocker: Any, tmp_path: Path, mock_execution_context
-    ) -> None:
+    async def test_uses_project_root_when_no_session(self, mocker: Any, tmp_path: Path, mock_execution_context) -> None:
         """When no session, format runs in project root directory."""
         mock_run_command = mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_command",
@@ -377,9 +351,7 @@ class TestRequestCodeReview:
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
         # Mock state manager
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
         mock_state_manager_class.return_value = mock_state_manager
@@ -419,9 +391,7 @@ class TestRequestCodeReview:
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
         mock_state_manager_class.return_value = mock_state_manager
@@ -451,18 +421,14 @@ class TestRequestCodeReview:
         assert result["status"] == "REJECTED"
 
     @pytest.mark.asyncio
-    async def test_request_code_review_blocks_dangerous_files(
-        self, mocker: Any, mock_execution_context
-    ) -> None:
+    async def test_request_code_review_blocks_dangerous_files(self, mocker: Any, mock_execution_context) -> None:
         """.env file not staged."""
         mock_config = MagicMock()
         mock_config.circuit_breakers.review.max_attempts = 5
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
         mock_state_manager_class.return_value = mock_state_manager
@@ -494,9 +460,7 @@ class TestRequestCodeReview:
         assert ".env" in result["warnings"][0]
 
     @pytest.mark.asyncio
-    async def test_request_code_review_circuit_breaker(
-        self, mocker: Any, mock_execution_context
-    ) -> None:
+    async def test_request_code_review_circuit_breaker(self, mocker: Any, mock_execution_context) -> None:
         """Escalation after max attempts."""
         mock_config = MagicMock()
         mock_config.circuit_breakers.review.max_attempts = 3
@@ -504,13 +468,9 @@ class TestRequestCodeReview:
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
         # State already at max attempts
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
-        mock_state_manager.load.return_value = QualityGateState(
-            task_id="test-task", review_attempts=3
-        )
+        mock_state_manager.load.return_value = QualityGateState(task_id="test-task", review_attempts=3)
         mock_state_manager_class.return_value = mock_state_manager
 
         from vibraphone.tools.quality_gate_tools import request_code_review
@@ -521,9 +481,7 @@ class TestRequestCodeReview:
         assert result["error_type"] == "CircuitBreakerTripped"
 
     @pytest.mark.asyncio
-    async def test_optional_task_id_derived_from_session(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_optional_task_id_derived_from_session(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """task_id derived from session when not explicitly provided."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -536,9 +494,7 @@ class TestRequestCodeReview:
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="001")
         mock_state_manager_class.return_value = mock_state_manager
@@ -570,9 +526,7 @@ class TestRequestCodeReview:
         assert result["status"] == "APPROVED"
 
     @pytest.mark.asyncio
-    async def test_explicit_task_id_overrides_session(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_explicit_task_id_overrides_session(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """Explicit task_id takes precedence over session task_id."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -585,9 +539,7 @@ class TestRequestCodeReview:
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="003")
         mock_state_manager_class.return_value = mock_state_manager
@@ -625,9 +577,7 @@ class TestAttemptCommit:
     @pytest.mark.asyncio
     async def test_attempt_commit_no_review(self, mocker: Any, mock_execution_context) -> None:
         """Fails without approved review."""
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = None  # No state
         mock_state_manager_class.return_value = mock_state_manager
@@ -642,9 +592,7 @@ class TestAttemptCommit:
     @pytest.mark.asyncio
     async def test_attempt_commit_diff_mismatch(self, mocker: Any, mock_execution_context) -> None:
         """Fails when diff hash changed."""
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(
             task_id="test-task",
@@ -670,9 +618,7 @@ class TestAttemptCommit:
     @pytest.mark.asyncio
     async def test_attempt_commit_quality_check_fails(self, mocker: Any, mock_execution_context) -> None:
         """Fails when just check fails."""
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(
             task_id="test-task",
@@ -714,9 +660,7 @@ class TestAttemptCommit:
     @pytest.mark.asyncio
     async def test_attempt_commit_success(self, mocker: Any, mock_execution_context) -> None:
         """All checks pass, commit executes."""
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(
             task_id="test-task",
@@ -761,9 +705,7 @@ class TestAttemptCommit:
         assert mock_commit.called
 
     @pytest.mark.asyncio
-    async def test_optional_task_id_derived_from_session(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_optional_task_id_derived_from_session(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """task_id derived from session when not explicitly provided."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -771,9 +713,7 @@ class TestAttemptCommit:
         mock_ctx = mocker.patch("vibraphone.tools.quality_gate_tools.get_execution_context")
         mock_ctx.return_value = (worktree_path, mock_session_state)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(
             task_id="001",
@@ -800,7 +740,7 @@ class TestAttemptCommit:
             "vibraphone.tools.quality_gate_tools.get_command",
             return_value="just check",
         )
-        mock_commit = mocker.patch(
+        _mock_commit = mocker.patch(
             "vibraphone.tools.quality_gate_tools.run_git_commit",
             new_callable=AsyncMock,
             return_value=(0, "[main abc1234] message", ""),
@@ -816,9 +756,7 @@ class TestAttemptCommit:
         assert result["status"] == "committed"
 
     @pytest.mark.asyncio
-    async def test_git_operations_use_worktree_cwd(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_git_operations_use_worktree_cwd(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """Git operations use worktree as cwd when session exists."""
         worktree_path = tmp_path / "worktrees" / "task-001"
         worktree_path.mkdir(parents=True, exist_ok=True)
@@ -826,9 +764,7 @@ class TestAttemptCommit:
         mock_ctx = mocker.patch("vibraphone.tools.quality_gate_tools.get_execution_context")
         mock_ctx.return_value = (worktree_path, mock_session_state)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(
             task_id="001",
@@ -877,48 +813,34 @@ class TestRequestCodeReviewDefensiveParsing:
     """Tests for request_code_review defensive parsing of files parameter."""
 
     @pytest.mark.asyncio
-    async def test_files_as_json_string_returns_error(
-        self, mocker: Any, mock_execution_context
-    ) -> None:
+    async def test_files_as_json_string_returns_error(self, mocker: Any, mock_execution_context) -> None:
         """Pass files as JSON string returns ParameterStringified error."""
         from vibraphone.tools.quality_gate_tools import request_code_review
 
-        result = await request_code_review.fn(
-            task_id="test-task", files='["main.py", "test.py"]'
-        )
+        result = await request_code_review.fn(task_id="test-task", files='["main.py", "test.py"]')
 
         assert result["status"] == "error"
         assert result["error_type"] == "ParameterStringified"
 
     @pytest.mark.asyncio
-    async def test_files_as_json_string_includes_wrong_right_table(
-        self, mocker: Any, mock_execution_context
-    ) -> None:
+    async def test_files_as_json_string_includes_wrong_right_table(self, mocker: Any, mock_execution_context) -> None:
         """Error message includes WRONG and RIGHT examples."""
         from vibraphone.tools.quality_gate_tools import request_code_review
 
-        result = await request_code_review.fn(
-            task_id="test-task", files='["main.py", "test.py"]'
-        )
+        result = await request_code_review.fn(task_id="test-task", files='["main.py", "test.py"]')
 
         assert "WRONG" in result["message"]
         assert "RIGHT" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_files_as_list_works_normally(
-        self, mocker: Any, mock_execution_context
-    ) -> None:
+    async def test_files_as_list_works_normally(self, mocker: Any, mock_execution_context) -> None:
         """Pass files as proper list proceeds normally."""
         mock_config = MagicMock()
         mock_config.circuit_breakers.review.max_attempts = 5
         mock_config.review.model = "test-model"
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config
-        )
+        mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
         mock_state_manager_class.return_value = mock_state_manager
@@ -935,18 +857,14 @@ class TestRequestCodeReviewDefensiveParsing:
         mock_result.issues = [mock_issue]
         mock_result.summary = "Looks good"
 
-        mock_reviewer_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.CodeReviewer"
-        )
+        mock_reviewer_class = mocker.patch("vibraphone.tools.quality_gate_tools.CodeReviewer")
         mock_reviewer = MagicMock()
         mock_reviewer.review.return_value = mock_result
         mock_reviewer_class.return_value = mock_reviewer
 
         from vibraphone.tools.quality_gate_tools import request_code_review
 
-        result = await request_code_review.fn(
-            task_id="test-task", files=["main.py", "test.py"]
-        )
+        result = await request_code_review.fn(task_id="test-task", files=["main.py", "test.py"])
 
         # Should NOT return the stringification error
         assert result["status"] != "error" or result.get("error_type") != "ParameterStringified"
@@ -954,20 +872,14 @@ class TestRequestCodeReviewDefensiveParsing:
         assert result["status"] == "APPROVED"
 
     @pytest.mark.asyncio
-    async def test_files_as_none_allowed(
-        self, mocker: Any, mock_execution_context
-    ) -> None:
+    async def test_files_as_none_allowed(self, mocker: Any, mock_execution_context) -> None:
         """Pass files=None (or omit) proceeds normally."""
         mock_config = MagicMock()
         mock_config.circuit_breakers.review.max_attempts = 5
         mock_config.review.model = "test-model"
-        mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config
-        )
+        mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
         mock_state_manager_class.return_value = mock_state_manager
@@ -984,9 +896,7 @@ class TestRequestCodeReviewDefensiveParsing:
         mock_result.issues = [mock_issue]
         mock_result.summary = "Looks good"
 
-        mock_reviewer_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.CodeReviewer"
-        )
+        mock_reviewer_class = mocker.patch("vibraphone.tools.quality_gate_tools.CodeReviewer")
         mock_reviewer = MagicMock()
         mock_reviewer.review.return_value = mock_result
         mock_reviewer_class.return_value = mock_reviewer
@@ -1073,9 +983,7 @@ class TestPhase8SuccessCriteria:
     """
 
     @pytest.mark.asyncio
-    async def test_QUAL_06_worktree_context_integration(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_QUAL_06_worktree_context_integration(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """QUAL-06: Verify quality gates use worktree context when session exists.
 
         Covers success criteria 1, 2, 3:
@@ -1097,9 +1005,7 @@ class TestPhase8SuccessCriteria:
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="001")
         mock_state_manager_class.return_value = mock_state_manager
@@ -1186,9 +1092,7 @@ class TestPhase8SuccessCriteria:
         assert commit_cwd == worktree_path, "attempt_commit should commit in worktree"
 
     @pytest.mark.asyncio
-    async def test_QUAL_06_fallback_to_project_root(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_QUAL_06_fallback_to_project_root(self, mocker: Any, tmp_path: Path) -> None:
         """QUAL-06: Verify fallback to project root when no session.
 
         Covers success criterion 4:
@@ -1204,9 +1108,7 @@ class TestPhase8SuccessCriteria:
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="default")
         mock_state_manager_class.return_value = mock_state_manager
@@ -1244,9 +1146,7 @@ class TestPhase8SuccessCriteria:
         assert format_cwd == tmp_path, "run_format should use project root when no session"
 
     @pytest.mark.asyncio
-    async def test_QUAL_06_e2e_task_flow(
-        self, mocker: Any, tmp_path: Path, mock_session_state
-    ) -> None:
+    async def test_QUAL_06_e2e_task_flow(self, mocker: Any, tmp_path: Path, mock_session_state) -> None:
         """QUAL-06: Verify E2E task flow components.
 
         Covers success criterion 5:
@@ -1269,9 +1169,7 @@ class TestPhase8SuccessCriteria:
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
         # Setup state manager with proper state progression
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         initial_state = QualityGateState(task_id="001")
         mock_state_manager.load.return_value = initial_state

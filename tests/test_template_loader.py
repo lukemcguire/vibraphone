@@ -4,8 +4,6 @@ Tests the template loading utilities that use importlib.resources
 for accessing bundled templates in the vibraphone.templates package.
 """
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 
@@ -78,7 +76,6 @@ class TestLoadTemplateTree:
         templates = load_template_tree("docs")
 
         # Check for nested paths (e.g., prompts/reviewer.md)
-        nested_found = any("/" in path or "\\" in path for path in templates.keys())
         # It's OK if no nested files exist, but if they do they should be included
         # Just verify structure is correct
         assert isinstance(templates, dict)

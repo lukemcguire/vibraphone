@@ -5,8 +5,6 @@ Tests the project metadata auto-detection utilities for init_project scaffolding
 
 from pathlib import Path
 
-import pytest
-
 
 class TestDetectLanguage:
     """Tests for detect_language function."""

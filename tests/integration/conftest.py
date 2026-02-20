@@ -1,8 +1,13 @@
 """Integration test fixtures with real git operations."""
 
-import pytest
+import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
+
+# Get full path to git executable (avoids S607 partial path warning)
+GIT = shutil.which("git") or "git"
 
 
 @pytest.fixture
@@ -15,14 +20,14 @@ def real_git_repo(tmp_path: Path) -> Path:
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "config", "user.name", "Test User"], cwd=repo, check=True, capture_output=True)
 
     # Create initial commit on main
     (repo / "README.md").write_text("# Integration Test Repo\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "add", "."], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "commit", "-m", "Initial commit"], cwd=repo, check=True, capture_output=True)
 
     return repo
 

@@ -113,7 +113,26 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001", "SLF001", "S603"]
+"tests/*" = [
+    "D",       # pydocstyle
+    "S101",    # assert-used
+    "ANN",     # annotations
+    "BLE",     # blind-except
+    "TRY",     # tryceratops
+    "INP001",  # implicit-namespace-package
+    "SLF001",  # private-member-access
+    "S603",    # subprocess-without-shell-equals-true
+    "N802",    # invalid-function-name (test names like test_NEW_01)
+    "ARG001",  # unused-function-argument (mock signatures)
+    "ARG002",  # unused-method-argument (pytest fixtures)
+    "ARG005",  # unused-lambda-argument (MagicMock protocol)
+    "DTZ001",  # call-datetime-without-tzinfo (test fixtures)
+    "DTZ005",  # call-datetime-now-without-tz (test fixtures)
+    "PT011",   # pytest-raises-too-broad
+    "RUF059",  # unpacked-variable-unused
+    "SIM117",  # multiple-with-statements (test fixtures)
+    "SIM118",  # in-dict-keys
+]
 
 # ─── Type Checking ────────────────────────────────────
 [tool.ty.environment]

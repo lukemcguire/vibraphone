@@ -4,11 +4,15 @@ Tests that the built wheel contains all required template files.
 Uses build-and-extract approach per CONTEXT.md decision.
 """
 
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
-import tempfile
+
 import pytest
+
+# Get full paths to executables (avoids S607 partial path warning)
+UV = shutil.which("uv") or "uv"
 
 
 class TestWheelTemplateContents:
@@ -19,7 +23,7 @@ class TestWheelTemplateContents:
         """Build wheel and return path to wheel file."""
         # Build wheel using uv
         result = subprocess.run(
-            ["uv", "build", "--wheel"],
+            [UV, "build", "--wheel"],
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True,

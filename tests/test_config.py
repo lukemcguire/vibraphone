@@ -86,7 +86,8 @@ class TestVibraphoneConfig:
 
     def test_worktrees_path_expands_tilde(self):
         """Verify ~/custom/path expands to absolute path."""
-        config = VibraphoneConfig(worktrees_path="~/custom/worktrees")
+        # Pydantic validator accepts strings and expands ~ (see expand_tilde validator)
+        config = VibraphoneConfig(worktrees_path="~/custom/worktrees")  # type: ignore[arg-type]
         expected = Path.home() / "custom" / "worktrees"
         assert config.worktrees_path == expected
 

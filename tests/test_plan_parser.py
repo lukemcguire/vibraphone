@@ -1,6 +1,5 @@
 """Unit tests for plan_parser utilities."""
 
-import pytest
 from vibraphone.utils.plan_parser import (
     detect_new_components,
     extract_frontmatter,
@@ -40,7 +39,7 @@ plan: 01
 
     def test_parses_depends_on_list(self):
         """Should parse depends_on as list."""
-        content = "---\ndepends_on: [\"05-01\", \"05-02\"]\n---\n"
+        content = '---\ndepends_on: ["05-01", "05-02"]\n---\n'
         result = extract_frontmatter(content)
         assert result["depends_on"] == ["05-01", "05-02"]
 

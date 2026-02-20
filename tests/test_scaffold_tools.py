@@ -9,7 +9,6 @@ To test the underlying logic, we access the original function via the .fn attrib
 
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -53,13 +52,16 @@ class TestInitProjectPreview:
     @pytest.mark.asyncio
     async def test_init_project_preview_returns_detected_values(self, mocker: Any, tmp_path: Path) -> None:
         """preview=True returns status='preview'."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -92,13 +94,16 @@ class TestInitProjectPreview:
     @pytest.mark.asyncio
     async def test_init_project_preview_does_not_write_files(self, mocker: Any, tmp_path: Path) -> None:
         """preview=True creates no files."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -133,13 +138,16 @@ class TestInitProjectApply:
     @pytest.mark.asyncio
     async def test_init_project_apply_creates_files(self, mocker: Any, tmp_path: Path) -> None:
         """preview=False creates files in empty dir."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -178,13 +186,16 @@ class TestInitProjectApply:
         # Create existing file
         (tmp_path / "vibraphone.yaml").write_text("old content\n")
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -213,13 +224,16 @@ class TestInitProjectApply:
         """Conflict includes unified diff."""
         (tmp_path / "vibraphone.yaml").write_text("old content\n")
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -249,13 +263,16 @@ class TestInitProjectApply:
         """Same content not reported as conflict."""
         (tmp_path / "vibraphone.yaml").write_text("same content\n")
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -288,13 +305,16 @@ class TestInitProjectApply:
         """.gitignore gets vibraphone entries appended."""
         (tmp_path / ".gitignore").write_text("*.pyc\n")
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -321,7 +341,7 @@ class TestInitProjectApply:
 
         from vibraphone.tools.scaffold_tools import init_project
 
-        result = await init_project.fn(str(tmp_path), preview=False)
+        await init_project.fn(str(tmp_path), preview=False)
 
         # gitignore should be updated
         gitignore_content = (tmp_path / ".gitignore").read_text()
@@ -330,13 +350,16 @@ class TestInitProjectApply:
     @pytest.mark.asyncio
     async def test_init_project_creates_justfile(self, mocker: Any, tmp_path: Path) -> None:
         """Justfile created if missing."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -371,17 +394,20 @@ class TestInitProjectApply:
     @pytest.mark.asyncio
     async def test_init_project_fails_on_missing_prerequisites(self, mocker: Any, tmp_path: Path) -> None:
         """Missing br/bv/git returns error."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [
-                {"tool": "br", "installed": False, "install_command": "cargo install beads_rust"},
-                {"tool": "bv", "installed": False, "install_command": "cargo install beads_viewer"},
-                {"tool": "git", "installed": True, "install_command": ""},
-            ],
-            "all_installed": False,
-            "shell_script": "#!/bin/bash\ncargo install beads_rust\ncargo install beads_viewer",
-            "missing_core": ["br", "bv"],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [
+                    {"tool": "br", "installed": False, "install_command": "cargo install beads_rust"},
+                    {"tool": "bv", "installed": False, "install_command": "cargo install beads_viewer"},
+                    {"tool": "git", "installed": True, "install_command": ""},
+                ],
+                "all_installed": False,
+                "shell_script": "#!/bin/bash\ncargo install beads_rust\ncargo install beads_viewer",
+                "missing_core": ["br", "bv"],
+            },
+        )
 
         from vibraphone.tools.scaffold_tools import init_project
 
@@ -408,13 +434,16 @@ class TestInitProjectValuesOverride:
     @pytest.mark.asyncio
     async def test_init_project_values_override_detected(self, mocker: Any, tmp_path: Path) -> None:
         """User-provided values override detected values."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -519,13 +548,16 @@ class TestNEW01InitProjectScaffoldsExisting:
         (git_dir / "config").write_text('[remote "origin"]\n    url = https://github.com/user/repo.git\n')
         (tmp_path / "pyproject.toml").write_text('[project]\nname = "existing-project"\n')
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools._render_all_templates",
             return_value={
@@ -565,13 +597,16 @@ class TestNEW02VibraphoneYamlHasProjectValues:
     @pytest.mark.asyncio
     async def test_NEW_02_vibraphone_yaml_has_project_values(self, mocker: Any, tmp_path: Path) -> None:
         """NEW-02: vibraphone.yaml generated with project-specific values."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -617,13 +652,16 @@ class TestNEW03GeneratesAgentsAndClaudeMd:
     @pytest.mark.asyncio
     async def test_NEW_03_generates_agents_and_claude_md(self, mocker: Any, tmp_path: Path) -> None:
         """NEW-03: Generates AGENTS.md and CLAUDE.md."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools._render_all_templates",
             return_value={
@@ -659,13 +697,16 @@ class TestNEW04GeneratesGovernanceDocs:
     @pytest.mark.asyncio
     async def test_NEW_04_generates_governance_docs(self, mocker: Any, tmp_path: Path) -> None:
         """NEW-04: Generates .planning/vibraphone/ governance docs."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools._render_all_templates",
             return_value={
@@ -702,13 +743,16 @@ class TestNEW05AppendsJustfile:
     @pytest.mark.asyncio
     async def test_NEW_05_appends_justfile(self, mocker: Any, tmp_path: Path) -> None:
         """NEW-05: Appends or creates Justfile with recipes."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools._render_all_templates",
             return_value={},
@@ -740,13 +784,16 @@ class TestNEW06AppendsGitignore:
         """NEW-06: Appends .gitignore with vibraphone entries."""
         (tmp_path / ".gitignore").write_text("*.pyc\n__pycache__/\n")
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools._render_all_templates",
             return_value={},
@@ -762,7 +809,7 @@ class TestNEW06AppendsGitignore:
 
         from vibraphone.tools.scaffold_tools import init_project
 
-        result = await init_project.fn(str(tmp_path), preview=False)
+        await init_project.fn(str(tmp_path), preview=False)
 
         gitignore_content = (tmp_path / ".gitignore").read_text()
         assert ".vibraphone/" in gitignore_content
@@ -778,13 +825,16 @@ class TestNEW07NoOverwriteWithoutConfirmation:
         # Create existing file with different content
         (tmp_path / "vibraphone.yaml").write_text("existing: config\n")
 
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools._render_all_templates",
             return_value={"vibraphone.yaml": "new: config\n"},
@@ -870,9 +920,7 @@ class TestInitProjectDefensiveParsing:
     """Tests for defensive parsing of values parameter in init_project."""
 
     @pytest.mark.asyncio
-    async def test_values_as_json_string_returns_error(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_values_as_json_string_returns_error(self, mocker: Any, tmp_path: Path) -> None:
         """Passing values as a JSON string returns ParameterStringified error."""
         from vibraphone.tools.scaffold_tools import init_project
 
@@ -883,9 +931,7 @@ class TestInitProjectDefensiveParsing:
         assert result["error_type"] == "ParameterStringified"
 
     @pytest.mark.asyncio
-    async def test_values_as_json_string_includes_wrong_right_table(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_values_as_json_string_includes_wrong_right_table(self, mocker: Any, tmp_path: Path) -> None:
         """Error message includes WRONG/RIGHT table format."""
         from vibraphone.tools.scaffold_tools import init_project
 
@@ -896,17 +942,18 @@ class TestInitProjectDefensiveParsing:
         assert "RIGHT" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_values_as_dict_works_normally(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_values_as_dict_works_normally(self, mocker: Any, tmp_path: Path) -> None:
         """Passing values as a dict proceeds normally (no error)."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={
@@ -940,17 +987,18 @@ class TestInitProjectDefensiveParsing:
         assert result["status"] != "error" or result.get("error_type") != "ParameterStringified"
 
     @pytest.mark.asyncio
-    async def test_values_as_none_allowed(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_values_as_none_allowed(self, mocker: Any, tmp_path: Path) -> None:
         """Passing values=None proceeds normally (parameter is optional)."""
-        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
-            "platform": "Linux",
-            "prerequisites": [],
-            "all_installed": True,
-            "shell_script": "",
-            "missing_core": [],
-        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
         mocker.patch(
             "vibraphone.tools.scaffold_tools.detect_project_metadata",
             return_value={

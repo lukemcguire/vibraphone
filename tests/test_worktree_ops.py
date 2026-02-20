@@ -4,7 +4,6 @@ Tests worktree_ops.py functions with mocked git commands.
 Uses pytest-mock for async subprocess mocking.
 """
 
-# ruff: noqa: SLF001, S603
 # SLF001: Private member access needed for mocking
 # S603: Subprocess calls are mocked, not actual
 
@@ -123,9 +122,8 @@ class TestCreateWorktree:
             call_count[0] += 1
             if call_count[0] == 1:
                 return (b"", b"")  # branch --list empty
-            else:
-                mock_proc.returncode = 1
-                return (b"", b"fatal: worktree creation failed\n")
+            mock_proc.returncode = 1
+            return (b"", b"fatal: worktree creation failed\n")
 
         mock_proc.communicate = mock_communicate
         mock_proc.returncode = 0  # First call succeeds
@@ -197,16 +195,15 @@ class TestRebaseOntoMain:
                 if call_count[0] == 1:
                     # git fetch
                     return (b"", b"")
-                elif call_count[0] == 2:
+                if call_count[0] == 2:
                     # git rebase (fails)
                     mock_proc.returncode = 1
                     return (b"", b"CONFLICT\n")
-                elif call_count[0] == 3:
+                if call_count[0] == 3:
                     # git diff --name-only --diff-filter=U
                     return (b"src/main.py\nsrc/utils.py\n", b"")
-                else:
-                    # git rebase --abort
-                    return (b"", b"")
+                # git rebase --abort
+                return (b"", b"")
 
             mock_proc.communicate = mock_communicate
             mock_proc.returncode = 0
@@ -234,9 +231,7 @@ class TestRebaseOntoMain:
             subprocess_calls.append(args)
             mock_proc = MagicMock()
             mock_proc.returncode = 0 if "--abort" in args else 1
-            mock_proc.communicate = AsyncMock(
-                return_value=(b"file.py\n" if "diff" in args else b"", b"")
-            )
+            mock_proc.communicate = AsyncMock(return_value=(b"file.py\n" if "diff" in args else b"", b""))
             return mock_proc
 
         mocker.patch("asyncio.create_subprocess_exec", side_effect=mock_create_subprocess)

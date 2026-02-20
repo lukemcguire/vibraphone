@@ -5,8 +5,6 @@ Tests the prerequisite detection utilities for vibraphone external dependencies.
 
 from unittest.mock import patch
 
-import pytest
-
 
 class TestCheckPrerequisites:
     """Tests for check_prerequisites function."""

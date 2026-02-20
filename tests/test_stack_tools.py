@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -262,7 +261,7 @@ class TestConfigureStackExecution:
         from vibraphone.tools.stack_tools import configure_stack
 
         components = {"backend": {"language": "python"}}
-        result = await configure_stack.fn(components, preview=False)
+        await configure_stack.fn(components, preview=False)
 
         assert yaml_path.exists()
         content = yaml_path.read_text()
@@ -319,7 +318,7 @@ class TestConfigureStackStitch:
         from vibraphone.tools.stack_tools import configure_stack
 
         components = {"backend": {"language": "python"}}
-        result = await configure_stack.fn(components, preview=False, stitch_project_id="my-project-123")
+        await configure_stack.fn(components, preview=False, stitch_project_id="my-project-123")
 
         content = yaml_path.read_text()
         assert "stitch:" in content
@@ -360,6 +359,7 @@ class TestConfigureStackStitch:
 
         assert mcp_config.exists()
         import json
+
         content = json.loads(mcp_config.read_text())
         assert "stitch" in content.get("mcpServers", {})
 
@@ -390,9 +390,7 @@ class TestConfigureStackDefensiveParsing:
         assert "RIGHT" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_components_as_dict_works_normally(
-        self, tmp_path: Path, mocker: Any
-    ) -> None:
+    async def test_components_as_dict_works_normally(self, tmp_path: Path, mocker: Any) -> None:
         """Passing components as dict should work normally."""
         mocker.patch("vibraphone.tools.stack_tools.get_project_root", return_value=tmp_path)
         mocker.patch("vibraphone.tools.stack_tools.find_config_file", return_value=None)

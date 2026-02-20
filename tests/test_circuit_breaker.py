@@ -3,8 +3,6 @@
 Tests CircuitBreaker trip detection and escalation response format.
 """
 
-import pytest
-
 from vibraphone.utils.circuit_breaker import CircuitBreaker
 
 

@@ -1,7 +1,6 @@
 """Vibraphone MCP server entry point."""
 
 import sys
-from pathlib import Path
 
 from vibraphone.config import find_config_file
 from vibraphone.mcp_instance import mcp

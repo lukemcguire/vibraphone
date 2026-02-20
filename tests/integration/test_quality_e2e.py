@@ -3,9 +3,9 @@
 Tests critical paths with real git operations.
 """
 
-import pytest
 from pathlib import Path
-import subprocess
+
+import pytest
 
 
 @pytest.mark.integration
@@ -17,10 +17,8 @@ class TestQualityGateE2E:
     async def test_run_tests_in_worktree_context(self, git_repo_with_config: Path) -> None:
         """run_tests executes in correct directory context."""
         # Verify context resolution works
-        from vibraphone.utils.context import get_execution_context
 
         # This would need proper git setup; placeholder verifies imports work
-        pass
 
     @pytest.mark.asyncio
     async def test_review_before_commit_enforced(self, git_repo_with_config: Path) -> None:

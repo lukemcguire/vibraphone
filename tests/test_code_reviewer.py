@@ -3,7 +3,8 @@
 Tests ReviewIssue, ReviewResult models and CodeReviewer with mocked LLM client.
 """
 
-from unittest.mock import MagicMock, patch
+from typing import Literal, cast
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -49,7 +50,7 @@ class TestReviewIssue:
 
     def test_review_issue_severity_values(self) -> None:
         """ReviewIssue accepts error and warning severity."""
-        for severity in ["error", "warning"]:
+        for severity in cast("list[Literal['error', 'warning']]", ["error", "warning"]):
             issue = ReviewIssue(
                 severity=severity,
                 file="test.py",
@@ -161,7 +162,7 @@ class TestCodeReviewer:
         reviewer._client = mock_client
 
         previous_issues = [{"file": "test.py", "message": "old issue"}]
-        result = reviewer.review("diff content", previous_issues=previous_issues)
+        reviewer.review("diff content", previous_issues=previous_issues)
 
         # Verify the call was made
         assert mock_client.chat.completions.create.called
@@ -249,4 +250,4 @@ class TestCodeReviewer:
 
         assert len(result.issues) == 1
         assert result.issues[0].severity == "error"
-        assert "src/main.py" == result.issues[0].file
+        assert result.issues[0].file == "src/main.py"

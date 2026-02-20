@@ -42,9 +42,7 @@ class TestPhase5SuccessCriteria:
         return mock
 
     @pytest.mark.asyncio
-    async def test_QUAL_01_run_tests_with_circuit_breaker(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_QUAL_01_run_tests_with_circuit_breaker(self, mocker: Any, tmp_path: Path) -> None:
         """QUAL-01: Verify run_tests tool exists and circuit_breaker.check is called.
 
         The run_tests tool should:
@@ -70,14 +68,10 @@ class TestPhase5SuccessCriteria:
         mock_config.circuit_breakers.tests.max_attempts = 3
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         # Start with 2 attempts, will increment to 3 on failure
-        mock_state_manager.load.return_value = QualityGateState(
-            task_id="default", test_attempts=2
-        )
+        mock_state_manager.load.return_value = QualityGateState(task_id="default", test_attempts=2)
         mock_state_manager_class.return_value = mock_state_manager
 
         # Run tool
@@ -178,9 +172,7 @@ class TestPhase5SuccessCriteria:
         mock_config.review.model = "test-model"
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
         mock_state_manager_class.return_value = mock_state_manager
@@ -211,9 +203,7 @@ class TestPhase5SuccessCriteria:
         assert ".env" in result["warnings"][0]
 
     @pytest.mark.asyncio
-    async def test_QUAL_05_attempt_commit_requires_review(
-        self, mocker: Any, tmp_path: Path
-    ) -> None:
+    async def test_QUAL_05_attempt_commit_requires_review(self, mocker: Any, tmp_path: Path) -> None:
         """QUAL-05: Verify attempt_commit enforces review-before-commit workflow.
 
         The attempt_commit tool should:
@@ -230,9 +220,7 @@ class TestPhase5SuccessCriteria:
         self._mock_execution_context(mocker, tmp_path)
 
         # Test 1: No approved review
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
         mock_state_manager.load.return_value = None
         mock_state_manager_class.return_value = mock_state_manager
@@ -339,13 +327,9 @@ class TestPhase5SuccessCriteria:
         mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
 
         # State at threshold
-        mock_state_manager_class = mocker.patch(
-            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
-        )
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
         mock_state_manager = MagicMock()
-        mock_state_manager.load.return_value = QualityGateState(
-            task_id="default", test_attempts=2
-        )
+        mock_state_manager.load.return_value = QualityGateState(task_id="default", test_attempts=2)
         mock_state_manager_class.return_value = mock_state_manager
 
         # Run - should escalate immediately (attempts already at threshold)

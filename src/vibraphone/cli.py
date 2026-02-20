@@ -85,7 +85,7 @@ def create_parser() -> argparse.ArgumentParser:
         "setup-commands",
         help="Install /v slash commands to ~/.claude/commands/",
     )
-    setup_parser.set_defaults(func=lambda args: cmd_setup_commands())
+    setup_parser.set_defaults(func=lambda _args: cmd_setup_commands())
 
     return parser
 

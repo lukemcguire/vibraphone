@@ -128,7 +128,7 @@ class TestPhase4SuccessCriteria:
 
         from vibraphone.utils.worktree_ops import RebaseError
 
-        mock_rebase = mocker.patch(
+        _mock_rebase = mocker.patch(
             "vibraphone.tools.worktree_tools.rebase_onto_main",
             new_callable=AsyncMock,
             side_effect=RebaseError(

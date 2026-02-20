@@ -4,9 +4,9 @@ Tests critical paths with real git operations.
 Marked as integration for CI filtering.
 """
 
-import pytest
 from pathlib import Path
-import subprocess
+
+import pytest
 
 
 @pytest.mark.integration
@@ -35,7 +35,6 @@ class TestWorktreeE2E:
     async def test_cleanup_removes_worktree(self, git_repo_with_config: Path) -> None:
         """cleanup_task removes worktree directory."""
         # Placeholder - verify cleanup infrastructure
-        pass
 
 
 @pytest.mark.integration
@@ -46,7 +45,7 @@ class TestImportGsdPlanE2E:
     @pytest.mark.asyncio
     async def test_import_plan_parses_file(self, git_repo_with_plan: Path) -> None:
         """import_gsd_plan parses a GSD plan file."""
-        from vibraphone.utils.plan_parser import extract_frontmatter, extract_tasks_from_xml
+        from vibraphone.utils.plan_parser import extract_frontmatter
 
         plan_path = git_repo_with_plan / ".planning" / "TEST-PLAN.md"
         content = plan_path.read_text()

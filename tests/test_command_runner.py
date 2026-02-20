@@ -127,9 +127,7 @@ class TestRunCommand:
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"", b""))
-        mock_create_subprocess = mocker.patch(
-            "asyncio.create_subprocess_exec", return_value=mock_proc
-        )
+        mock_create_subprocess = mocker.patch("asyncio.create_subprocess_exec", return_value=mock_proc)
 
         await run_command("just test", cwd=tmp_path)
 
@@ -143,9 +141,7 @@ class TestRunCommand:
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"", b""))
-        mock_create_subprocess = mocker.patch(
-            "asyncio.create_subprocess_exec", return_value=mock_proc
-        )
+        mock_create_subprocess = mocker.patch("asyncio.create_subprocess_exec", return_value=mock_proc)
 
         with patch("vibraphone.utils.command_runner.Path.cwd") as mock_cwd:
             mock_cwd.return_value = Path("/some/path")
@@ -169,9 +165,7 @@ class TestRunCommand:
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"output\n", b""))
-        mock_create_subprocess = mocker.patch(
-            "asyncio.create_subprocess_exec", return_value=mock_proc
-        )
+        mock_create_subprocess = mocker.patch("asyncio.create_subprocess_exec", return_value=mock_proc)
 
         await run_command("pytest -xvs --tb=short", cwd=tmp_path)
 
@@ -188,9 +182,7 @@ class TestRunCommand:
         """run_command captures both stdout and stderr."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
-        mock_proc.communicate = AsyncMock(
-            return_value=(b"some output\n", b"some warnings\n")
-        )
+        mock_proc.communicate = AsyncMock(return_value=(b"some output\n", b"some warnings\n"))
         mocker.patch("asyncio.create_subprocess_exec", return_value=mock_proc)
 
         returncode, stdout, stderr = await run_command("just test", cwd=tmp_path)
@@ -205,9 +197,7 @@ class TestRunCommand:
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         # Unicode output
-        mock_proc.communicate = AsyncMock(
-            return_value=("Tests: \u2713 5 passed\n".encode(), b"")
-        )
+        mock_proc.communicate = AsyncMock(return_value=("Tests: \u2713 5 passed\n".encode(), b""))
         mocker.patch("asyncio.create_subprocess_exec", return_value=mock_proc)
 
         returncode, stdout, stderr = await run_command("just test", cwd=tmp_path)

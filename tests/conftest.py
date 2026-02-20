@@ -4,9 +4,9 @@ This module provides common fixtures that can be used across all test files.
 Fixtures are automatically discovered by pytest.
 """
 
-from datetime import datetime
-from pathlib import Path
+import shutil
 import subprocess
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -14,7 +14,8 @@ import pytest
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
 
-    from vibraphone.utils.session import SessionState
+# Get full path to git executable (avoids S607 partial path warning)
+GIT = shutil.which("git") or "git"
 
 
 @pytest.fixture
@@ -33,14 +34,14 @@ def tmp_git_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "test_repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
 
     # Create initial commit
     (repo / "README.md").write_text("# Test Repo\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "add", "."], cwd=repo, check=True, capture_output=True)
+    subprocess.run([GIT, "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
 
     return repo
 
