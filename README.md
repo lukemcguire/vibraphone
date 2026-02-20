@@ -1,7 +1,5 @@
 # Vibraphone
 
-[![PyPI version](https://badge.fury.io/py/vibraphone.svg)](https://badge.fury.io/py/vibraphone)
-[![Python Versions](https://img.shields.io/pypi/pyversions/vibraphone.svg)](https://pypi.org/project/vibraphone/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/lukemcguire/vibraphone/actions/workflows/ci.yml/badge.svg)](https://github.com/lukemcguire/vibraphone/actions)
 [![Coverage](https://codecov.io/gh/lukemcguire/vibraphone/branch/main/graph/badge.svg)](https://codecov.io/gh/lukemcguire/vibraphone)
