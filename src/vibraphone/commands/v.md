@@ -937,7 +937,133 @@ Suggested action: "Start a new task with `/v start` or `/v next`"
 
 ## Troubleshooting
 
-[Will be populated by Plan 11-03]
+Common errors and their resolutions. For command-specific errors, see
+the command documentation above.
+
+### Quality Gate Failures
+
+**Test failures:**
+
+When `/v test` returns FAILED:
+
+1. Review failure output - file, line, and error message
+2. Fix the failing test or the code it tests
+3. Re-run `/v test` until PASSED
+4. If stuck after max attempts, circuit breaker escalates
+
+Common causes:
+- Missing test fixtures or mock data
+- API or environment changes
+- Flaky tests (intermittent failures)
+
+**Lint failures:**
+
+When `/v lint` returns FAILED:
+
+1. Review violations - file, line, and rule ID
+2. Fix the violation (many are auto-fixable with format)
+3. Re-run `/v lint` until PASSED
+
+Common causes:
+- Unused imports
+- Missing docstrings
+- Line length violations
+
+**Review rejection:**
+
+When `/v review` returns REJECTED:
+
+1. Review issues list - severity, file, and description
+2. Fix identified problems in the code
+3. Re-run `/v review` until APPROVED
+4. If max attempts exceeded, tool returns ESCALATED
+
+Common rejection reasons:
+- Missing error handling
+- Security concerns (hardcoded secrets, SQL injection risks)
+- Performance issues (N+1 queries, missing indices)
+
+**Missing API key:**
+
+Error: `MissingAPIKeyError`
+
+The review tool requires REVIEWER_API_KEY for LLM access.
+
+Resolution:
+1. Get API key from OpenRouter (or configured provider)
+2. Set in environment: `export REVIEWER_API_KEY=sk-...`
+3. Or add to .env file: `REVIEWER_API_KEY=sk-...`
+4. Restart Claude Code to pick up the environment variable
+
+### Worktree Issues
+
+**Merge conflicts:**
+
+Error: `RebaseConflict` with `conflicted_files` list
+
+When rebasing onto main, conflicts occur if main has divergent changes.
+
+Resolution:
+1. cd to worktree path (shown in error)
+2. Open conflicted files - look for <<<<<<< markers
+3. Edit to resolve conflicts (keep correct code, remove markers)
+4. Stage resolved files: `git add <files>`
+5. Continue rebase: `git rebase --continue`
+6. Re-run `/v merge <task_id>`
+
+**Uncommitted changes:**
+
+Error: `UncommittedChanges` with file list
+
+Cannot merge or cleanup when worktree has uncommitted changes.
+
+Resolution:
+1. cd to worktree path
+2. Option A - Commit: `/v commit "message"`
+3. Option B - Stash: `git stash`
+4. Re-run the failed command
+
+**Branch not merged:**
+
+Error: `BranchNotMerged`
+
+Cannot cleanup a branch that hasn't been merged to main.
+
+Resolution:
+1. Run `/v merge <task_id>` first
+2. Then run `/v cleanup <task_id>`
+
+**Branch already exists:**
+
+Error: `BranchAlreadyExists`
+
+Task branch already exists - task may already be in progress.
+
+Resolution:
+1. Check existing worktrees: `git worktree list`
+2. If worktree exists, cd to it and continue
+3. If no worktree but branch exists, may need manual cleanup:
+   - `git branch -D task/bd-abc123` (destructive)
+
+### Session Issues
+
+**No active session:**
+
+Status: `NO_SESSION`
+
+No session found for the current or specified task.
+
+Resolution:
+- Start a new task: `/v start <task_id>` or `/v next` then `/v start`
+- Recover previous: `/v recover`
+
+**Session recovery:**
+
+After Claude Code restarts or crashes:
+
+1. Run `/v recover` to restore session context
+2. If recovery fails, run `/v status` to check state
+3. Start fresh with `/v next` and `/v start`
 
 ## Workflow Shortcuts
 
