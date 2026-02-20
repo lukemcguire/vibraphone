@@ -30,6 +30,38 @@ STITCH_MCP_ENTRY = {
 }
 
 
+def _build_stringification_error(
+    param_name: str,
+    received: str,
+    example_wrong: str,
+    example_right: str,
+) -> dict[str, Any]:
+    """Build educational error for stringified parameter.
+
+    When Claude passes a dict parameter as a JSON string (due to MCP serialization),
+    this helper returns a helpful error message with WRONG/RIGHT examples.
+    """
+    display_value = received if len(received) <= 100 else received[:97] + "..."
+
+    return {
+        "status": "error",
+        "error_type": "ParameterStringified",
+        "message": f"""Parameter `{param_name}` received as a JSON string
+instead of a native object.
+
+| WRONG                          | RIGHT                        |
+| ------------------------------ | ---------------------------- |
+| `{example_wrong}` | `{example_right}` |
+
+Remove the quotes around the object.""",
+        "received": display_value,
+        "next_steps": [
+            f"Pass `{param_name}` as a native object, not a JSON string.",
+            "MCP protocol handles JSON serialization automatically.",
+        ],
+    }
+
+
 def _render_component_recipes(name: str, root: str, commands: dict[str, str]) -> str:
     """Render per-component Justfile recipes for a single component.
 
@@ -219,9 +251,9 @@ def _sync_mcp_config(*, stitch_enabled: bool, project_root: Path) -> dict:
 @mcp.tool
 async def configure_stack(
     components: dict[str, dict[str, Any]],
+    stitch_project_id: str | None = None,
     *,
     preview: bool = True,
-    stitch_project_id: str | None = None,
 ) -> dict[str, Any]:
     """Generate per-component Justfile recipes and vibraphone.yaml config.
 
