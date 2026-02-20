@@ -37,7 +37,20 @@
   - [x] 10-02-PLAN.md -- Add setup-commands CLI subcommand with unit tests
   - [x] 10-03-PLAN.md -- Clean up obsolete skill-based implementation
   - [x] 10-04-PLAN.md -- Add /v command documentation to README.md (gap closure)
-- [ ] Phase 11: Command Documentation (0/9 plans) -- pending
+- [ ] Phase 11: Command Documentation (0/4 plans) -- in progress
+
+  **Goal:** Document all /v slash commands in v.md with correct MCP tool calling
+  convention. Covers core workflow commands (list, next, start, test, lint,
+  format, review, commit, merge, cleanup, complete, recover, status, health)
+  and dict-heavy commands (init, configure-stack, import-plan).
+
+  **Requirements:** SLASH-01, SLASH-02, SLASH-04
+
+  **Plans:**
+  - [ ] 11-01-PLAN.md -- Document structure + Quick Reference + dict-heavy commands
+  - [ ] 11-02-PLAN.md -- Start Work + Run Quality commands with full coverage
+  - [ ] 11-03-PLAN.md -- Commit & Merge + Session Management + Troubleshooting
+  - [ ] 11-04-PLAN.md -- Final verification checkpoint
 - [ ] Phase 12: Tool Hardening (0/8 plans) -- pending
 
 **Goal:** Agents invoke vibraphone tools reliably via /v commands -- no more
@@ -66,8 +79,8 @@ serialization guessing.
 | 7. Scaffolding & Templates | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 8. Quality Gate Worktree Integration | v0.1.0 | 1/1 | Complete | 2026-02-17 |
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
-| 10. Command Infrastructure | v0.1.1 | Complete    | 2026-02-19 | 2026-02-19 |
-| 11. Command Documentation | v0.1.1 | 0/9 | Pending | -- |
+| 10. Command Infrastructure | v0.1.1 | Complete | 2026-02-19 | 2026-02-19 |
+| 11. Command Documentation | v0.1.1 | 0/4 | In Progress | -- |
 | 12. Tool Hardening | v0.1.1 | 0/8 | Pending | -- |
 
 ---
