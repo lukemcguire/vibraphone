@@ -283,7 +283,7 @@ Suggested action: "Create PLAN.md files first"
 
 ### `/v list [--status STATUS] [--plan PLAN]`
 
-List tasks from Beads.
+List tasks from Beads. Shows task ID, title, status, and plan assignment.
 
 - `--status`: Filter by status (ready, in_progress, completed, blocked)
 - `--plan`: Filter by plan ID (e.g., "06-02")
@@ -295,34 +295,88 @@ List tasks from Beads.
 | status    | string | null    | No       |
 | plan      | string | null    | No       |
 
-**Default call** (no options):
+**Typical usage (all tasks):**
 
+User runs: `/v list`
+
+Claude calls:
 ```json
 {}
 ```
 
-**With filters**:
+**Filter by status:**
 
+User runs: `/v list --status ready`
+
+Claude calls:
+```json
+{"status": "ready"}
+```
+
+**Filter by plan:**
+
+User runs: `/v list --plan 06-02`
+
+Claude calls:
+```json
+{"plan": "06-02"}
+```
+
+**Combine filters:**
+
+User runs: `/v list --status in_progress --plan 06`
+
+Claude calls:
 ```json
 {
-  "status": "ready",
-  "plan": "06-02"
+  "status": "in_progress",
+  "plan": "06"
 }
 ```
 
+**Edge case - No tasks found:**
+
+Returns empty list with message "No tasks found matching criteria"
+
 ### `/v next`
 
-Get the next ready task using critical path analysis.
+Get the next ready task using critical path analysis. Considers dependencies,
+priorities, and blocking relationships.
 
 **MCP Tool**: `vibraphone_next_ready`
 
 No parameters required.
 
+**Typical usage:**
+
+User runs: `/v next`
+
+Claude calls:
+```json
+{}
+```
+
+**Response includes:**
+
+- Task ID (e.g., "bd-abc123")
+- Title and description
+- Why this task was selected (dependencies met, high priority, etc.)
+- Suggested next action
+
+**Edge case - No ready tasks:**
+
+Response: "No ready tasks found"
+Suggested actions:
+- Check if blocked tasks have unresolved dependencies
+- Complete in-progress tasks first
+- Import new plans with `/v import-plan`
+
 ### `/v start <task_id>`
 
-Start a task in an isolated worktree.
+Start a task in an isolated git worktree. Creates a branch, sets up the
+worktree, and begins a session.
 
-- `<task_id>`: Task ID (required, e.g., bd-abc123)
+- `<task_id>`: Task ID from Beads (required, e.g., bd-abc123)
 
 **MCP Tool**: `vibraphone_start_task`
 
@@ -330,12 +384,42 @@ Start a task in an isolated worktree.
 | --------- | ------ | ------- | -------- |
 | task_id   | string | -       | Yes      |
 
-**Call**:
+**Typical usage:**
 
+User runs: `/v start bd-abc123`
+
+Claude calls:
 ```json
-{
-  "task_id": "bd-abc123"
-}
+{"task_id": "bd-abc123"}
+```
+
+**Response includes:**
+
+- Worktree path (e.g., ~/.vibraphone/worktrees/bd-abc123/)
+- Branch name
+- Session ID
+
+**Edge case - Task already in progress:**
+
+Error: `BranchAlreadyExists`
+Message: "Branch 'task/bd-abc123' already exists"
+Suggested action: "Task may already be in progress. Check existing worktrees
+with `git worktree list`"
+
+**Edge case - Blocked task:**
+
+Error: `CannotStartBlockedTask`
+Message: "Task has incomplete dependencies"
+Suggested action: Lists blocking tasks to complete first
+
+**Common mistake - Wrong ID format:**
+
+```text
+# WRONG - Using numeric ID
+/v start 123
+
+# RIGHT - Use full task ID from /v list output
+/v start bd-abc123
 ```
 
 ## Run Quality
