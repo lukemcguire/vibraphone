@@ -10,12 +10,12 @@ review) before it can be committed — enforced by tooling, not by prompting.
 
 ## Current Position
 
-Phase: 10-command-infrastructure
-Plan: 04 complete
-Status: Phase 10 complete - all plans done, ready for Phase 11
-Last activity: 2026-02-19 — Plan 10-04 completed (README documentation gap closure)
+Phase: 11-command-documentation
+Plan: 01 complete
+Status: Plan 11-01 complete (command structure reorganization)
+Last activity: 2026-02-20 — Plan 11-01 completed (Quick Reference, 4-group workflow, dict-heavy expansion)
 
-Progress: [████░░░░░░░░░░░░░░] 25%
+Progress: [█████░░░░░░░░░░░░░░░] 28%
 
 ## Accumulated Context
 
@@ -30,6 +30,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Multi-layer defense for stringification: docs + defensive parsing + errors
 - [Phase 10-02]: Silent overwrite of existing v.md (no confirmation) for setup-commands
 - [Phase 10-03]: Removed skill subcommand entirely per locked decision (no compatibility alias)
+- [Phase 11]: 4-group workflow structure (Start Work, Run Quality, Commit & Merge, Session Management) mirrors how users work through tasks
+- [Phase 11]: Dict-heavy commands (init, configure-stack, import-plan) get expanded documentation with typical/edge/mistake examples
 
 ### Pending Todos
 
@@ -39,7 +41,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [x] Complete plan 10-02 (setup-commands CLI)
 - [x] Complete plan 10-03 (cleanup skill subcommand)
 - [x] Complete plan 10-04 (README documentation gap closure)
-- [ ] Start Phase 11 (Command Documentation)
+- [x] Start Phase 11 (Command Documentation)
+- [x] Complete plan 11-01 (command structure reorganization)
+- [ ] Complete plan 11-02 (remaining command documentation)
 
 ### Blockers/Concerns
 
@@ -49,6 +53,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-19 — Plan 10-04 completed
-Stopped at: Phase 10 complete, ready for Phase 11
-Resume file: .planning/phases/10-command-infrastructure/10-04-SUMMARY.md
+Last session: 2026-02-20 — Plan 11-01 completed
+Stopped at: Phase 11 Plan 01 complete, ready for Plan 11-02
+Resume file: .planning/phases/11-command-documentation/11-01-SUMMARY.md
