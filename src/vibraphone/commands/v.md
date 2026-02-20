@@ -837,29 +837,103 @@ Commands for checking project state and recovering from interruptions.
 Use these when you need to understand current status or resume after
 a break.
 
-### `/v recover`
-
-Resume interrupted session.
-
-**MCP Tool**: `vibraphone_recover_session`
-
-No parameters required.
-
 ### `/v status`
 
-Show current session/project state.
+Show current session and project state. Displays active task, worktree
+location, and recent activity.
 
 **MCP Tool**: `vibraphone_recover_session`
 
 No parameters required.
+
+**Typical usage:**
+
+User runs: `/v status`
+
+Claude calls:
+```json
+{}
+```
+
+**Response includes:**
+
+- Session status (active/inactive)
+- Current task ID and title
+- Worktree path
+- Branch name
+- Uncommitted changes count
+
+**Edge case - No active session:**
+
+Status: NO_SESSION
+Message: "No active session found"
+Suggested actions:
+- Start a task with `/v start <task_id>`
+- Recover a previous session with `/v recover`
 
 ### `/v health`
 
-Show project health metrics.
+Show project health metrics. Analyzes task completion rates, quality
+gate success rates, and overall project status.
 
 **MCP Tool**: `vibraphone_health_check`
 
 No parameters required.
+
+**Typical usage:**
+
+User runs: `/v health`
+
+Claude calls:
+```json
+{}
+```
+
+**Response includes:**
+
+- Total tasks count
+- Completed/In Progress/Ready/Blocked breakdown
+- Quality gate success rate
+- Average tasks per day (if history available)
+- Any warnings or recommendations
+
+### `/v recover`
+
+Resume an interrupted session. Finds the most recent incomplete
+session and restores context.
+
+**MCP Tool**: `vibraphone_recover_session`
+
+No parameters required.
+
+**Typical usage:**
+
+User runs: `/v recover`
+
+Claude calls:
+```json
+{}
+```
+
+**Response includes:**
+
+- Recovered session ID
+- Task ID and title
+- Worktree path
+- Last known state
+- Suggested next action
+
+**Edge case - No session to recover:**
+
+Status: NO_SESSION
+Message: "No incomplete session found"
+Suggested action: "Start a new task with `/v start` or `/v next`"
+
+**When to use:**
+
+- After Claude Code restart
+- After system crash or timeout
+- When continuing work after a break
 
 ## Troubleshooting
 
