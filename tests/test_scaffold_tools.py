@@ -864,3 +864,120 @@ class TestTMPL01TemplatesBundledInWheel:
 
         # Should be a Traversable (importlib.resources type)
         assert isinstance(pkg, resources.abc.Traversable)
+
+
+class TestInitProjectDefensiveParsing:
+    """Tests for defensive parsing of values parameter in init_project."""
+
+    @pytest.mark.asyncio
+    async def test_values_as_json_string_returns_error(
+        self, mocker: Any, tmp_path: Path
+    ) -> None:
+        """Passing values as a JSON string returns ParameterStringified error."""
+        from vibraphone.tools.scaffold_tools import init_project
+
+        json_string = '{"project_name": "test"}'
+        result = await init_project.fn(str(tmp_path), values=json_string)
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "ParameterStringified"
+
+    @pytest.mark.asyncio
+    async def test_values_as_json_string_includes_wrong_right_table(
+        self, mocker: Any, tmp_path: Path
+    ) -> None:
+        """Error message includes WRONG/RIGHT table format."""
+        from vibraphone.tools.scaffold_tools import init_project
+
+        json_string = '{"project_name": "test"}'
+        result = await init_project.fn(str(tmp_path), values=json_string)
+
+        assert "WRONG" in result["message"]
+        assert "RIGHT" in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_values_as_dict_works_normally(
+        self, mocker: Any, tmp_path: Path
+    ) -> None:
+        """Passing values as a dict proceeds normally (no error)."""
+        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
+            "platform": "Linux",
+            "prerequisites": [],
+            "all_installed": True,
+            "shell_script": "",
+            "missing_core": [],
+        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.detect_project_metadata",
+            return_value={
+                "project_name": "test-project",
+                "git_remote": None,
+                "language": "python",
+                "test_framework": "pytest",
+                "ci_platform": None,
+                "worktrees_path": "~/.vibraphone/worktrees",
+            },
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools._render_all_templates",
+            return_value={"vibraphone.yaml": "# config"},
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools._check_conflicts",
+            return_value=({"vibraphone.yaml": "# config"}, []),
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.load_template",
+            side_effect=FileNotFoundError,
+        )
+
+        from vibraphone.tools.scaffold_tools import init_project
+
+        values_dict = {"project_name": "test"}
+        result = await init_project.fn(str(tmp_path), preview=False, values=values_dict)
+
+        # Should NOT return an error - dict passes through normally
+        assert result["status"] != "error" or result.get("error_type") != "ParameterStringified"
+
+    @pytest.mark.asyncio
+    async def test_values_as_none_allowed(
+        self, mocker: Any, tmp_path: Path
+    ) -> None:
+        """Passing values=None proceeds normally (parameter is optional)."""
+        mocker.patch("vibraphone.tools.scaffold_tools.check_prereqs", return_value={
+            "platform": "Linux",
+            "prerequisites": [],
+            "all_installed": True,
+            "shell_script": "",
+            "missing_core": [],
+        })
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.detect_project_metadata",
+            return_value={
+                "project_name": "test-project",
+                "git_remote": None,
+                "language": "python",
+                "test_framework": "pytest",
+                "ci_platform": None,
+                "worktrees_path": "~/.vibraphone/worktrees",
+            },
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools._render_all_templates",
+            return_value={"vibraphone.yaml": "# config"},
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools._check_conflicts",
+            return_value=({"vibraphone.yaml": "# config"}, []),
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.load_template",
+            side_effect=FileNotFoundError,
+        )
+
+        from vibraphone.tools.scaffold_tools import init_project
+
+        result = await init_project.fn(str(tmp_path), preview=False, values=None)
+
+        # Should NOT return an error - None is valid for optional parameter
+        assert result["status"] != "error" or result.get("error_type") != "ParameterStringified"
