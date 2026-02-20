@@ -162,6 +162,7 @@ dev = [
     "mkdocs-material>=9.7.1",
     "mkdocstrings>=1.0.3",
     "mkdocstrings-python>=2.0.2",
+    "prek>=0.3.2",
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-cov>=7.0.0",
