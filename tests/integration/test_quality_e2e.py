@@ -57,9 +57,7 @@ class TestInitProjectE2E:
     """E2E tests for init_project workflow."""
 
     @pytest.mark.asyncio
-    async def test_init_project_creates_files(
-        self, tmp_path: Path, mocker: Any
-    ) -> None:
+    async def test_init_project_creates_files(self, tmp_path: Path, mocker: Any) -> None:
         """init_project creates expected files in empty directory."""
         from vibraphone.tools.scaffold_tools import init_project
 
@@ -84,9 +82,7 @@ class TestInitProjectE2E:
         assert "files_to_create" in result or "proposed_files" in result
 
     @pytest.mark.asyncio
-    async def test_init_project_detects_existing_project(
-        self, git_repo_with_config: Path, mocker: Any
-    ) -> None:
+    async def test_init_project_detects_existing_project(self, git_repo_with_config: Path, mocker: Any) -> None:
         """init_project handles existing vibraphone.yaml correctly."""
         from vibraphone.tools.scaffold_tools import init_project
 
