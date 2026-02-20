@@ -37,7 +37,7 @@
   - [x] 10-02-PLAN.md -- Add setup-commands CLI subcommand with unit tests
   - [x] 10-03-PLAN.md -- Clean up obsolete skill-based implementation
   - [x] 10-04-PLAN.md -- Add /v command documentation to README.md (gap closure)
-- [ ] Phase 11: Command Documentation (0/4 plans) -- in progress
+- [x] Phase 11: Command Documentation (0/4 plans) -- in progress (completed 2026-02-20)
 
   **Goal:** Document all /v slash commands in v.md with correct MCP tool calling
   convention. Covers core workflow commands (list, next, start, test, lint,
@@ -80,7 +80,7 @@ serialization guessing.
 | 8. Quality Gate Worktree Integration | v0.1.0 | 1/1 | Complete | 2026-02-17 |
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 10. Command Infrastructure | v0.1.1 | Complete | 2026-02-19 | 2026-02-19 |
-| 11. Command Documentation | 3/4 | In Progress|  | -- |
+| 11. Command Documentation | 4/4 | Complete   | 2026-02-20 | -- |
 | 12. Tool Hardening | v0.1.1 | 0/8 | Pending | -- |
 
 ---
