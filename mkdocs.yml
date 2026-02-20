@@ -1,5 +1,6 @@
 site_name: Vibraphone
 site_description: MCP server for AI coding agents with quality gates
+site_url: https://lukemcguire.github.io/vibraphone/
 repo_url: https://github.com/lukemcguire/vibraphone
 repo_name: lukemcguire/vibraphone
 
