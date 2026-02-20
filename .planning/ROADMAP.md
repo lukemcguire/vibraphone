@@ -29,15 +29,15 @@
 
 - [x] Phase 10: Command Infrastructure (4/4 plans) -- completed 2026-02-19
 
-  **Goal:** Establish /v slash command installation mechanism with CLI command and
-  bundled v.md file.
+  **Goal:** Establish /v slash command installation mechanism with CLI command
+  and bundled v.md file.
 
   **Plans:**
   - [x] 10-01-PLAN.md -- Create commands/ package with v.md slash command file
   - [x] 10-02-PLAN.md -- Add setup-commands CLI subcommand with unit tests
   - [x] 10-03-PLAN.md -- Clean up obsolete skill-based implementation
   - [x] 10-04-PLAN.md -- Add /v command documentation to README.md (gap closure)
-- [x] Phase 11: Command Documentation (0/4 plans) -- in progress (completed 2026-02-20)
+- [x] Phase 11: Command Documentation (4/4 plans) -- completed 2026-02-20
 
   **Goal:** Document all /v slash commands in v.md with correct MCP tool calling
   convention. Covers core workflow commands (list, next, start, test, lint,
@@ -45,24 +45,19 @@
   and dict-heavy commands (init, configure-stack, import-plan).
 
   **Requirements:** SLASH-01, SLASH-02, SLASH-04
+- [ ] Phase 12: Tool Hardening (0/4 plans) -- pending
+
+  **Goal:** Add defensive parsing to MCP tools so they gracefully handle when
+  Claude passes dict/list arguments as JSON strings. Focus on known problematic
+  tools only.
+
+  **Requirements:** SLASH-03
 
   **Plans:**
-  - [ ] 11-01-PLAN.md -- Document structure + Quick Reference + dict-heavy commands
-  - [ ] 11-02-PLAN.md -- Start Work + Run Quality commands with full coverage
-  - [ ] 11-03-PLAN.md -- Commit & Merge + Session Management + Troubleshooting
-  - [ ] 11-04-PLAN.md -- Final verification checkpoint
-- [ ] Phase 12: Tool Hardening (0/8 plans) -- pending
-
-**Goal:** Agents invoke vibraphone tools reliably via /v commands -- no more
-serialization guessing.
-
-**Requirements:**
-- SLASH-01: Add /v commands for core workflow tools
-- SLASH-02: Add /v commands for dict-heavy tools
-- SLASH-03: Investigate stringification bug -- root cause and fix
-- SLASH-04: Documentation update for /v commands
-- SLASH-05: `vibraphone setup-commands` CLI to install slash commands
-- SLASH-06: Clean up existing artifacts (skills/v/, vibraphone-cli)
+  - [ ] 12-01-PLAN.md -- Add defensive parsing to init_project (values param)
+  - [ ] 12-02-PLAN.md -- Add defensive parsing to configure_stack (components param)
+  - [ ] 12-03-PLAN.md -- Add defensive parsing to request_code_review (files param)
+  - [ ] 12-04-PLAN.md -- Final verification of all defensive parsing
 
 </details>
 
@@ -79,9 +74,9 @@ serialization guessing.
 | 7. Scaffolding & Templates | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 8. Quality Gate Worktree Integration | v0.1.0 | 1/1 | Complete | 2026-02-17 |
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
-| 10. Command Infrastructure | v0.1.1 | Complete | 2026-02-19 | 2026-02-19 |
-| 11. Command Documentation | 4/4 | Complete    | 2026-02-20 | -- |
-| 12. Tool Hardening | v0.1.1 | 0/8 | Pending | -- |
+| 10. Command Infrastructure | v0.1.1 | 4/4 | Complete | 2026-02-19 |
+| 11. Command Documentation | v0.1.1 | 4/4 | Complete | 2026-02-20 |
+| 12. Tool Hardening | v0.1.1 | 0/4 | Pending | -- |
 
 ---
 
