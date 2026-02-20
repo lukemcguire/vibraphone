@@ -544,6 +544,15 @@ async def request_code_review(task_id: str | None = None, files: list[str] | Non
         Dict with status (APPROVED/REJECTED/ESCALATED), issues, summary,
         warnings (blocked dangerous files), attempt, next_steps.
     """
+    # Defensive check for stringified files parameter
+    if files is not None and isinstance(files, str):
+        return _build_stringification_error(
+            param_name="files",
+            received=files,
+            example_wrong='files: "[\\"main.py\\", \\"test.py\\"]"',
+            example_right='files: ["main.py", "test.py"]',
+        )
+
     config = get_config()
     exec_dir, session = get_execution_context()
     effective_task_id = task_id if task_id else get_effective_task_id(session)
