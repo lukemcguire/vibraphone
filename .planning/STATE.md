@@ -36,6 +36,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11-command-documentation]: Quality gate, worktree, and session issues grouped for discoverability
 - [Phase 12-02]: Duplicated _build_stringification_error helper in stack_tools.py per locked decision (inline helpers simpler than cross-file imports for 3 tools)
 - [Phase 12-01]: Helper function stays local to scaffold_tools.py (not shared utils)
+- [Phase 12-01]: Error includes truncated received value (100 char max) for debugging
 
 ### Pending Todos
 
