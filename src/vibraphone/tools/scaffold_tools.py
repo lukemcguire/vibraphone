@@ -17,6 +17,39 @@ from vibraphone.utils.template_loader import (
 )
 
 
+def _build_stringification_error(
+    param_name: str,
+    received: str,
+    example_wrong: str,
+    example_right: str,
+) -> dict[str, Any]:
+    """Build educational error for stringified parameter.
+
+    When Claude passes a parameter as a JSON string instead of a native object,
+    return this error to educate about the correct format.
+    """
+    # Truncate long values for readability
+    display_value = received if len(received) <= 100 else received[:97] + "..."
+
+    return {
+        "status": "error",
+        "error_type": "ParameterStringified",
+        "message": f"""Parameter `{param_name}` received as a JSON string
+instead of a native object.
+
+| WRONG                          | RIGHT                        |
+| ------------------------------ | ---------------------------- |
+| `{example_wrong}` | `{example_right}` |
+
+Remove the quotes around the object.""",
+        "received": display_value,
+        "next_steps": [
+            f"Pass `{param_name}` as a native object, not a JSON string.",
+            "MCP protocol handles JSON serialization automatically.",
+        ],
+    }
+
+
 def _progress(message: str, status: str = "OK") -> None:
     """Print progress step with status indicator."""
     indicators = {
@@ -138,9 +171,9 @@ async def check_prerequisites() -> dict[str, Any]:
 @mcp.tool
 async def init_project(
     project_path: str | None = None,
+    values: dict[str, Any] | None = None,
     *,
     preview: bool = True,
-    values: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Scaffold vibraphone into a project.
 
