@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v0.1.0 Initial Release** -- Phases 1-9 (shipped 2026-02-17)
-- **v0.1.1 Slash Commands** -- Phases 10-12 (in progress)
+- **v0.1.1 Slash Commands** -- Phases 10-12 (shipped 2026-02-20)
 
 ## Phases
 
@@ -25,7 +25,7 @@
 </details>
 
 <details>
-<summary>v0.1.1 Slash Commands (Phases 10-12) -- IN PROGRESS</summary>
+<summary>v0.1.1 Slash Commands (Phases 10-12) -- SHIPPED 2026-02-20</summary>
 
 - [x] Phase 10: Command Infrastructure (4/4 plans) -- completed 2026-02-19
 
@@ -45,7 +45,7 @@
   and dict-heavy commands (init, configure-stack, import-plan).
 
   **Requirements:** SLASH-01, SLASH-02, SLASH-04
-- [ ] Phase 12: Tool Hardening (3/4 plans) -- in progress
+- [x] Phase 12: Tool Hardening (4/4 plans) -- completed 2026-02-20
 
   **Goal:** Add defensive parsing to MCP tools so they gracefully handle when
   Claude passes dict/list arguments as JSON strings. Focus on known problematic
@@ -57,7 +57,7 @@
   - [x] 12-01-PLAN.md -- Add defensive parsing to init_project (values param)
   - [x] 12-02-PLAN.md -- Add defensive parsing to configure_stack (components param)
   - [x] 12-03-PLAN.md -- Add defensive parsing to request_code_review (files param)
-  - [ ] 12-04-PLAN.md -- Final verification of all defensive parsing
+  - [x] 12-04-PLAN.md -- Final verification of all defensive parsing
 
 </details>
 
@@ -76,7 +76,7 @@
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 10. Command Infrastructure | v0.1.1 | 4/4 | Complete | 2026-02-19 |
 | 11. Command Documentation | v0.1.1 | 4/4 | Complete | 2026-02-20 |
-| 12. Tool Hardening | v0.1.1 | 3/4 | In Progress | -- |
+| 12. Tool Hardening | v0.1.1 | 4/4 | Complete | 2026-02-20 |
 
 ---
 
