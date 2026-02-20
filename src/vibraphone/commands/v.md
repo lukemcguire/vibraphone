@@ -59,7 +59,8 @@ on a task.
 
 ### `/v init [--language LANG] [--name NAME] [--apply]`
 
-Initialize vibraphone in the current project.
+Initialize vibraphone in the current project. Creates vibraphone.yaml
+and supporting configuration files.
 
 - `--language` / `-l`: Programming language (python, go, rust, node)
 - `--name` / `-n`: Project name (defaults to directory name)
@@ -73,14 +74,25 @@ Initialize vibraphone in the current project.
 | values       | object  | null    | No       |
 | preview      | boolean | true    | No       |
 
-**Default call** (no options):
+**Typical usage (preview first):**
 
+User runs: `/v init`
+
+Claude calls:
 ```json
 {"preview": true}
 ```
 
-**With options**:
+Claude shows preview, asks to confirm, then calls:
+```json
+{"preview": false}
+```
 
+**With language and name:**
+
+User runs: `/v init --language go --name myapp --apply`
+
+Claude calls:
 ```json
 {
   "preview": false,
@@ -91,11 +103,22 @@ Initialize vibraphone in the current project.
 }
 ```
 
+**Common mistake - WRONG stringification:**
+
+```json
+// WRONG - values is a string, not an object
+{"values": "{\"language\": \"go\"}"}
+```
+
+```json
+// RIGHT - values is a native object
+{"values": {"language": "go"}}
+```
+
 **Flow**:
 
 1. If no `--apply`: Call with `preview: true`, show preview, ask to confirm
-2. With `--apply` or after confirmation: Call with `preview: false` and
-   `values: {...}`
+2. With `--apply` or after confirmation: Call with `preview: false`
 
 ### `/v check-prereqs`
 
@@ -107,7 +130,8 @@ No parameters required.
 
 ### `/v configure-stack [--stitch PROJECT_ID]`
 
-Configure test/lint/format commands.
+Configure test/lint/format commands for project components. Generates
+or updates the components section in vibraphone.yaml.
 
 - `--stitch`: Enable Stitch MCP integration with project ID
 
@@ -119,8 +143,11 @@ Configure test/lint/format commands.
 | stitch_project_id | string  | null    | No       |
 | preview           | boolean | true    | No       |
 
-**Call with components**:
+**Typical usage (single Python component):**
 
+User runs: `/v configure-stack`
+
+Claude understands project and calls:
 ```json
 {
   "components": {
@@ -136,18 +163,65 @@ Configure test/lint/format commands.
 }
 ```
 
+**Multiple components (monorepo):**
+
+```json
+{
+  "components": {
+    "backend": {
+      "language": "python",
+      "root": "./backend",
+      "test_command": "pytest",
+      "lint_command": "ruff check .",
+      "format_command": "ruff format ."
+    },
+    "frontend": {
+      "language": "node",
+      "root": "./frontend",
+      "test_command": "npm test",
+      "lint_command": "npm run lint",
+      "format_command": "npm run format"
+    }
+  },
+  "preview": true
+}
+```
+
+**With Stitch integration:**
+
+```json
+{
+  "components": {"server": {...}},
+  "stitch_project_id": "proj_abc123",
+  "preview": false
+}
+```
+
+**Common mistake - WRONG stringification:**
+
+```json
+// WRONG - components is a string
+{"components": "{\"server\": {...}}"}
+```
+
+```json
+// RIGHT - components is a native object
+{"components": {"server": {...}}}
+```
+
 **Flow**:
 
-1. Understand project components
+1. Understand project structure (languages, test frameworks)
 2. Call with `preview: true`
 3. Show proposed config, ask to confirm
 4. Call with `preview: false`
 
 ### `/v import-plan <phase>`
 
-Import GSD phase plans into Beads tasks.
+Import GSD phase plans into Beads tasks. Reads PLAN.md files from
+.planning/phases/ directory and creates corresponding Beads tasks.
 
-- `<phase>`: Phase number (required)
+- `<phase>`: Phase number (required, e.g., 6 or 06)
 
 **MCP Tool**: `vibraphone_import_gsd_plan`
 
@@ -156,8 +230,11 @@ Import GSD phase plans into Beads tasks.
 | phase_number | integer | -       | Yes      |
 | preview      | boolean | true    | No       |
 
-**Call**:
+**Typical usage (preview first):**
 
+User runs: `/v import-plan 6`
+
+Claude calls:
 ```json
 {
   "phase_number": 6,
@@ -165,11 +242,44 @@ Import GSD phase plans into Beads tasks.
 }
 ```
 
+Claude shows what would be imported, asks to confirm.
+
+**With apply (skip preview):**
+
+User runs: `/v import-plan 6 --apply`
+
+Claude calls:
+```json
+{
+  "phase_number": 6,
+  "preview": false
+}
+```
+
+**Edge case - Phase with no plans:**
+
+Error: `NoPlanFilesFound`
+Message: "No PLAN.md files found in phase directory"
+Suggested action: "Create PLAN.md files first"
+
+**Common mistake - WRONG parameter type:**
+
+```json
+// WRONG - phase_number is a string
+{"phase_number": "6", "preview": true}
+```
+
+```json
+// RIGHT - phase_number is an integer
+{"phase_number": 6, "preview": true}
+```
+
 **Flow**:
 
 1. Call with `preview: true`
-2. Show what would be imported, ask to confirm
-3. Call with `preview: false`
+2. Show what would be imported (tasks, dependencies)
+3. Ask to confirm
+4. Call with `preview: false`
 
 ### `/v list [--status STATUS] [--plan PLAN]`
 
