@@ -430,9 +430,10 @@ review before it can be committed.
 
 ### `/v test [--component NAME]`
 
-Run tests.
+Run tests in the current worktree context. Uses the test_command from
+vibraphone.yaml for the specified component.
 
-- `--component`: Component name to test (optional)
+- `--component`: Component name to test (optional, defaults to all)
 
 **MCP Tool**: `vibraphone_run_tests`
 
@@ -440,17 +441,48 @@ Run tests.
 | --------- | ------ | ------- | -------- |
 | component | string | null    | No       |
 
-**Default call** (no options):
+**Typical usage (all components):**
 
+User runs: `/v test`
+
+Claude calls:
 ```json
 {}
 ```
 
+**Specific component:**
+
+User runs: `/v test --component server`
+
+Claude calls:
+```json
+{"component": "server"}
+```
+
+**Success response:**
+
+- Status: PASSED
+- Test count and pass rate
+
+**Failure response:**
+
+- Status: FAILED
+- Failure details with file/line
+- Suggested fixes
+
+**Edge case - Circuit breaker triggered:**
+
+After max_test_attempts exceeded:
+- Status: ESCALATED
+- Message: "Test failures persist after N attempts"
+- Suggested action: Manual intervention required
+
 ### `/v lint [--component NAME]`
 
-Run linter.
+Run linter in the current worktree context. Uses the lint_command from
+vibraphone.yaml.
 
-- `--component`: Component name to lint (optional)
+- `--component`: Component name to lint (optional, defaults to all)
 
 **MCP Tool**: `vibraphone_run_lint`
 
@@ -458,17 +490,40 @@ Run linter.
 | --------- | ------ | ------- | -------- |
 | component | string | null    | No       |
 
-**Default call** (no options):
+**Typical usage:**
 
+User runs: `/v lint`
+
+Claude calls:
 ```json
 {}
 ```
 
+**Success response:**
+
+- Status: PASSED
+- No lint errors found
+
+**Failure response:**
+
+- Status: FAILED
+- Violation list with file/line/rule
+- Many violations are auto-fixable
+
+**Common workflow:**
+
+```text
+/v lint          # See violations
+# Fix or auto-fix issues
+/v lint          # Re-run until PASSED
+```
+
 ### `/v format [--component NAME]`
 
-Run formatter.
+Run formatter in the current worktree context. Uses the format_command from
+vibraphone.yaml.
 
-- `--component`: Component name to format (optional)
+- `--component`: Component name to format (optional, defaults to all)
 
 **MCP Tool**: `vibraphone_run_format`
 
@@ -476,17 +531,29 @@ Run formatter.
 | --------- | ------ | ------- | -------- |
 | component | string | null    | No       |
 
-**Default call** (no options):
+**Typical usage:**
 
+User runs: `/v format`
+
+Claude calls:
 ```json
 {}
 ```
 
+**Response includes:**
+
+- Status: PASSED (formatting applied)
+- Files modified count
+
+**Note:** Formatters typically modify files in place. The quality gate checks
+that the formatter ran successfully, not that files were unchanged.
+
 ### `/v review [--files FILE1,FILE2,...]`
 
-Request code review.
+Request LLM-powered code review. Uses instructor + OpenRouter to analyze code
+changes and provide feedback.
 
-- `--files`: Comma-separated list of files (optional)
+- `--files`: Comma-separated list of files to review (optional)
 
 **MCP Tool**: `vibraphone_request_code_review`
 
@@ -495,19 +562,62 @@ Request code review.
 | task_id   | string        | null    | No       |
 | files     | array[string] | null    | No       |
 
-**Default call** (no options):
+**Typical usage (all changed files):**
 
+User runs: `/v review`
+
+Claude calls:
 ```json
 {}
 ```
 
-**With files**:
+**Specific files:**
 
+User runs: `/v review --files src/main.py,src/utils.py`
+
+Claude calls:
 ```json
 {
   "files": ["src/main.py", "src/utils.py"]
 }
 ```
+
+**Common mistake - WRONG array format:**
+
+```json
+// WRONG - files is a string
+{"files": "src/main.py,src/utils.py"}
+```
+
+```json
+// RIGHT - files is an array
+{"files": ["src/main.py", "src/utils.py"]}
+```
+
+**Success response:**
+
+- Status: APPROVED
+- Review summary
+- No blocking issues
+
+**Rejection response:**
+
+- Status: REJECTED
+- Issues list with severity and location
+- Suggested fixes
+
+**Edge case - Missing API key:**
+
+Error: `MissingAPIKeyError`
+Message: "REVIEWER_API_KEY not set"
+Suggested action: "Set REVIEWER_API_KEY in environment or .env file"
+
+**Edge case - Circuit breaker:**
+
+After max_review_attempts exceeded:
+- Status: ESCALATED
+- Message: "Review not approved after N attempts"
+- Suggested action: Manual review required
 
 ## Commit & Merge
 
