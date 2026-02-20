@@ -4,6 +4,7 @@ Tests critical paths with real git operations.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -56,9 +57,23 @@ class TestInitProjectE2E:
     """E2E tests for init_project workflow."""
 
     @pytest.mark.asyncio
-    async def test_init_project_creates_files(self, tmp_path: Path) -> None:
+    async def test_init_project_creates_files(
+        self, tmp_path: Path, mocker: Any
+    ) -> None:
         """init_project creates expected files in empty directory."""
         from vibraphone.tools.scaffold_tools import init_project
+
+        # Mock prerequisites to pass (CI doesn't have br/bv/just installed)
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
 
         empty_dir = tmp_path / "new_project"
         empty_dir.mkdir()
@@ -69,9 +84,23 @@ class TestInitProjectE2E:
         assert "files_to_create" in result or "proposed_files" in result
 
     @pytest.mark.asyncio
-    async def test_init_project_detects_existing_project(self, git_repo_with_config: Path) -> None:
+    async def test_init_project_detects_existing_project(
+        self, git_repo_with_config: Path, mocker: Any
+    ) -> None:
         """init_project handles existing vibraphone.yaml correctly."""
         from vibraphone.tools.scaffold_tools import init_project
+
+        # Mock prerequisites to pass (CI doesn't have br/bv/just installed)
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
 
         result = await init_project.fn(project_path=str(git_repo_with_config), preview=True)
 
