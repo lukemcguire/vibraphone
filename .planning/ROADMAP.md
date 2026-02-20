@@ -80,7 +80,7 @@ serialization guessing.
 | 8. Quality Gate Worktree Integration | v0.1.0 | 1/1 | Complete | 2026-02-17 |
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 10. Command Infrastructure | v0.1.1 | Complete | 2026-02-19 | 2026-02-19 |
-| 11. Command Documentation | 1/4 | In Progress|  | -- |
+| 11. Command Documentation | 2/4 | In Progress|  | -- |
 | 12. Tool Hardening | v0.1.1 | 0/8 | Pending | -- |
 
 ---
