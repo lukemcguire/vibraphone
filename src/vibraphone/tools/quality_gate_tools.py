@@ -42,6 +42,44 @@ DANGEROUS_PATTERNS = [
 ]
 
 
+def _build_stringification_error(
+    param_name: str,
+    received: str,
+    example_wrong: str,
+    example_right: str,
+) -> dict:
+    """Build educational error for stringified parameter.
+
+    Args:
+        param_name: Name of the parameter that was stringified.
+        received: The stringified value received.
+        example_wrong: Example of incorrect usage.
+        example_right: Example of correct usage.
+
+    Returns:
+        Error dict with WRONG/RIGHT table format.
+    """
+    display_value = received if len(received) <= 100 else received[:97] + "..."
+
+    return {
+        "status": "error",
+        "error_type": "ParameterStringified",
+        "message": f"""Parameter `{param_name}` received as a JSON string
+instead of a native object.
+
+| WRONG | RIGHT |
+| ----- | ----- |
+| `{example_wrong}` | `{example_right}` |
+
+Remove the quotes around the object.""",
+        "received": display_value,
+        "next_steps": [
+            f"Pass `{param_name}` as a native object, not a JSON string.",
+            "MCP protocol handles JSON serialization automatically.",
+        ],
+    }
+
+
 def is_dangerous_file(file_path: str) -> bool:
     """Check if a file matches dangerous file patterns.
 
