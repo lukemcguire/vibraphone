@@ -873,6 +873,135 @@ class TestAttemptCommit:
         assert mock_run_git_commit.call_args.kwargs["cwd"] == worktree_path
 
 
+class TestRequestCodeReviewDefensiveParsing:
+    """Tests for request_code_review defensive parsing of files parameter."""
+
+    @pytest.mark.asyncio
+    async def test_files_as_json_string_returns_error(
+        self, mocker: Any, mock_execution_context
+    ) -> None:
+        """Pass files as JSON string returns ParameterStringified error."""
+        from vibraphone.tools.quality_gate_tools import request_code_review
+
+        result = await request_code_review.fn(
+            task_id="test-task", files='["main.py", "test.py"]'
+        )
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "ParameterStringified"
+
+    @pytest.mark.asyncio
+    async def test_files_as_json_string_includes_wrong_right_table(
+        self, mocker: Any, mock_execution_context
+    ) -> None:
+        """Error message includes WRONG and RIGHT examples."""
+        from vibraphone.tools.quality_gate_tools import request_code_review
+
+        result = await request_code_review.fn(
+            task_id="test-task", files='["main.py", "test.py"]'
+        )
+
+        assert "WRONG" in result["message"]
+        assert "RIGHT" in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_files_as_list_works_normally(
+        self, mocker: Any, mock_execution_context
+    ) -> None:
+        """Pass files as proper list proceeds normally."""
+        mock_config = MagicMock()
+        mock_config.circuit_breakers.review.max_attempts = 5
+        mock_config.review.model = "test-model"
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config
+        )
+
+        mock_state_manager_class = mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
+        )
+        mock_state_manager = MagicMock()
+        mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
+        mock_state_manager_class.return_value = mock_state_manager
+
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.prepare_files_for_review",
+            new_callable=AsyncMock,
+            return_value=([], "some diff content", None),
+        )
+
+        mock_issue = MagicMock()
+        mock_issue.model_dump.return_value = {"severity": "warning", "message": "OK"}
+        mock_result = MagicMock()
+        mock_result.issues = [mock_issue]
+        mock_result.summary = "Looks good"
+
+        mock_reviewer_class = mocker.patch(
+            "vibraphone.tools.quality_gate_tools.CodeReviewer"
+        )
+        mock_reviewer = MagicMock()
+        mock_reviewer.review.return_value = mock_result
+        mock_reviewer_class.return_value = mock_reviewer
+
+        from vibraphone.tools.quality_gate_tools import request_code_review
+
+        result = await request_code_review.fn(
+            task_id="test-task", files=["main.py", "test.py"]
+        )
+
+        # Should NOT return the stringification error
+        assert result["status"] != "error" or result.get("error_type") != "ParameterStringified"
+        # Should proceed to review
+        assert result["status"] == "APPROVED"
+
+    @pytest.mark.asyncio
+    async def test_files_as_none_allowed(
+        self, mocker: Any, mock_execution_context
+    ) -> None:
+        """Pass files=None (or omit) proceeds normally."""
+        mock_config = MagicMock()
+        mock_config.circuit_breakers.review.max_attempts = 5
+        mock_config.review.model = "test-model"
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config
+        )
+
+        mock_state_manager_class = mocker.patch(
+            "vibraphone.tools.quality_gate_tools.get_quality_state_manager"
+        )
+        mock_state_manager = MagicMock()
+        mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
+        mock_state_manager_class.return_value = mock_state_manager
+
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.prepare_files_for_review",
+            new_callable=AsyncMock,
+            return_value=([], "some diff content", None),
+        )
+
+        mock_issue = MagicMock()
+        mock_issue.model_dump.return_value = {"severity": "warning", "message": "OK"}
+        mock_result = MagicMock()
+        mock_result.issues = [mock_issue]
+        mock_result.summary = "Looks good"
+
+        mock_reviewer_class = mocker.patch(
+            "vibraphone.tools.quality_gate_tools.CodeReviewer"
+        )
+        mock_reviewer = MagicMock()
+        mock_reviewer.review.return_value = mock_result
+        mock_reviewer_class.return_value = mock_reviewer
+
+        from vibraphone.tools.quality_gate_tools import request_code_review
+
+        # Call with files=None (or omit)
+        result = await request_code_review.fn(task_id="test-task", files=None)
+
+        # Should NOT return the stringification error
+        assert result["status"] != "error" or result.get("error_type") != "ParameterStringified"
+        # Should proceed to review
+        assert result["status"] == "APPROVED"
+
+
 class TestHelperFunctions:
     """Tests for helper functions."""
 
