@@ -627,7 +627,8 @@ to main, and cleaning up worktrees.
 
 ### `/v commit <message>`
 
-Attempt to commit changes.
+Attempt to commit changes. Enforces quality gate: requires passing
+tests, lint, and approved review before committing.
 
 - `<message>`: Commit message (required)
 
@@ -638,17 +639,57 @@ Attempt to commit changes.
 | task_id   | string | null    | No       |
 | message   | string | ""      | No       |
 
-**Call**:
+**Typical usage:**
 
+User runs: `/v commit "feat: add user authentication"`
+
+Claude calls:
 ```json
 {
   "message": "feat: add user authentication"
 }
 ```
 
+**Success response:**
+
+- Status: COMMITTED
+- Commit hash
+- Branch name
+
+**Quality gate enforcement:**
+
+The tool runs quality checks before committing:
+
+1. Run tests - if fail, return TESTS_FAILED
+2. Run lint - if fail, return LINT_FAILED
+3. Check for approved review - if none, return REVIEW_REQUIRED
+
+**Edge case - Quality gate failure:**
+
+Status: TESTS_FAILED
+Message: "Tests must pass before commit"
+Suggested action: "Run /v test to see failures, fix, and retry"
+
+**Edge case - No approved review:**
+
+Status: REVIEW_REQUIRED
+Message: "Code review required before commit"
+Suggested action: "Run /v review and address feedback"
+
+**Common mistake - Empty message:**
+
+```text
+# WRONG - No commit message
+/v commit
+
+# RIGHT - Always provide a meaningful message
+/v commit "feat: add user authentication"
+```
+
 ### `/v merge <task_id>`
 
-Merge task branch into main.
+Merge task branch into main. Rebases onto main first, then fast-forward
+merges.
 
 - `<task_id>`: Task ID (required, e.g., bd-abc123)
 
@@ -658,17 +699,49 @@ Merge task branch into main.
 | --------- | ------ | ------- | -------- |
 | task_id   | string | -       | Yes      |
 
-**Call**:
+**Typical usage:**
 
+User runs: `/v merge bd-abc123`
+
+Claude calls:
 ```json
-{
-  "task_id": "bd-abc123"
-}
+{"task_id": "bd-abc123"}
+```
+
+**Success response:**
+
+- Status: MERGED
+- Merged commit hash
+- Target branch (main)
+
+**Edge case - Uncommitted changes:**
+
+Error: `UncommittedChanges`
+Message: "Worktree has uncommitted changes"
+Suggested action: "Commit or stash changes first"
+Files: List of modified files
+
+**Edge case - Rebase conflict:**
+
+Error: `RebaseConflict`
+Message: "Rebase conflicts with main"
+Suggested action: "Manually resolve conflicts"
+Conflicted files: List of files with conflicts
+
+**Conflict resolution workflow:**
+
+```text
+1. cd ~/.vibraphone/worktrees/bd-abc123/
+2. # Edit conflicted files
+3. git add <resolved-files>
+4. git rebase --continue
+5. /v merge bd-abc123
 ```
 
 ### `/v cleanup <task_id>`
 
-Remove worktree and delete branch.
+Remove worktree and delete task branch. Run after merge to clean up
+isolated development environment.
 
 - `<task_id>`: Task ID (required, e.g., bd-abc123)
 
@@ -678,17 +751,37 @@ Remove worktree and delete branch.
 | --------- | ------ | ------- | -------- |
 | task_id   | string | -       | Yes      |
 
-**Call**:
+**Typical usage:**
 
+User runs: `/v cleanup bd-abc123`
+
+Claude calls:
 ```json
-{
-  "task_id": "bd-abc123"
-}
+{"task_id": "bd-abc123"}
 ```
+
+**Success response:**
+
+- Status: CLEANED_UP
+- Removed worktree path
+- Deleted branch name
+
+**Edge case - Branch not merged:**
+
+Error: `BranchNotMerged`
+Message: "Task branch not merged into main"
+Suggested action: "Run /v merge first"
+
+**Edge case - Uncommitted changes:**
+
+Error: `UncommittedChanges`
+Message: "Worktree has uncommitted changes"
+Suggested action: "Commit or stash changes, or use --force"
 
 ### `/v complete <task_id> [--notes NOTES]`
 
-Mark task as completed.
+Mark task as completed in Beads. Updates task status and records
+completion notes.
 
 - `<task_id>`: Task ID (required, e.g., bd-abc123)
 - `--notes`: Optional completion notes
@@ -700,22 +793,43 @@ Mark task as completed.
 | task_id   | string | -       | Yes      |
 | notes     | string | null    | No       |
 
-**Call**:
+**Typical usage:**
 
+User runs: `/v complete bd-abc123`
+
+Claude calls:
 ```json
-{
-  "task_id": "bd-abc123"
-}
+{"task_id": "bd-abc123"}
 ```
 
-**With notes**:
+**With completion notes:**
 
+User runs: `/v complete bd-abc123 --notes "Feature shipped to production"`
+
+Claude calls:
 ```json
 {
   "task_id": "bd-abc123",
-  "notes": "Completed feature X"
+  "notes": "Feature shipped to production"
 }
 ```
+
+**Edge case - Blocked task:**
+
+Error: `CannotCompleteBlockedTask`
+Message: "Task has incomplete dependencies"
+Suggested action: Lists blocking tasks
+
+**Typical completion workflow:**
+
+```text
+/v commit "feat: complete feature"
+/v merge bd-abc123
+/v cleanup bd-abc123
+/v complete bd-abc123
+```
+
+Or use the shortcut: `/v finish bd-abc123 "feat: complete feature"`
 
 ## Session Management
 
