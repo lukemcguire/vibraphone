@@ -26,7 +26,36 @@ JSON objects/arrays, NOT as JSON strings**.
 The MCP protocol handles JSON serialization automatically. Never manually
 serialize dicts/lists to strings.
 
-## Commands
+## Quick Reference
+
+| Command | Purpose | MCP Tool |
+| ------- | ------- | -------- |
+| /v init | Initialize vibraphone in project | vibraphone_init_project |
+| /v check-prereqs | Check dependencies | vibraphone_check_prerequisites |
+| /v configure-stack | Configure test/lint/format | vibraphone_configure_stack |
+| /v import-plan | Import GSD plans to Beads | vibraphone_import_gsd_plan |
+| /v list | List tasks from Beads | vibraphone_list_tasks |
+| /v next | Get next ready task | vibraphone_next_ready |
+| /v start <id> | Start task in worktree | vibraphone_start_task |
+| /v test | Run tests | vibraphone_run_tests |
+| /v lint | Run linter | vibraphone_run_lint |
+| /v format | Run formatter | vibraphone_run_format |
+| /v review | Request code review | vibraphone_request_code_review |
+| /v commit <msg> | Attempt commit | vibraphone_attempt_commit |
+| /v merge <id> | Merge task branch | vibraphone_merge_task |
+| /v cleanup <id> | Remove worktree/branch | vibraphone_cleanup_task |
+| /v complete <id> | Mark task done | vibraphone_complete_task |
+| /v status | Show session state | vibraphone_recover_session |
+| /v health | Show health metrics | vibraphone_health_check |
+| /v recover | Resume session | vibraphone_recover_session |
+| /v cycle | Run quality suite | (multiple) |
+| /v finish | Complete workflow | (multiple) |
+
+## Start Work
+
+Commands for discovering and starting tasks. These are your entry points
+into the workflow - use them to see what's available and begin working
+on a task.
 
 ### `/v init [--language LANG] [--name NAME] [--apply]`
 
@@ -114,6 +143,34 @@ Configure test/lint/format commands.
 3. Show proposed config, ask to confirm
 4. Call with `preview: false`
 
+### `/v import-plan <phase>`
+
+Import GSD phase plans into Beads tasks.
+
+- `<phase>`: Phase number (required)
+
+**MCP Tool**: `vibraphone_import_gsd_plan`
+
+| Parameter    | Type    | Default | Required |
+| ------------ | ------- | ------- | -------- |
+| phase_number | integer | -       | Yes      |
+| preview      | boolean | true    | No       |
+
+**Call**:
+
+```json
+{
+  "phase_number": 6,
+  "preview": true
+}
+```
+
+**Flow**:
+
+1. Call with `preview: true`
+2. Show what would be imported, ask to confirm
+3. Call with `preview: false`
+
 ### `/v list [--status STATUS] [--plan PLAN]`
 
 List tasks from Beads.
@@ -151,34 +208,6 @@ Get the next ready task using critical path analysis.
 
 No parameters required.
 
-### `/v import-plan <phase>`
-
-Import GSD phase plans into Beads tasks.
-
-- `<phase>`: Phase number (required)
-
-**MCP Tool**: `vibraphone_import_gsd_plan`
-
-| Parameter    | Type    | Default | Required |
-| ------------ | ------- | ------- | -------- |
-| phase_number | integer | -       | Yes      |
-| preview      | boolean | true    | No       |
-
-**Call**:
-
-```json
-{
-  "phase_number": 6,
-  "preview": true
-}
-```
-
-**Flow**:
-
-1. Call with `preview: true`
-2. Show what would be imported, ask to confirm
-3. Call with `preview: false`
-
 ### `/v start <task_id>`
 
 Start a task in an isolated worktree.
@@ -198,6 +227,12 @@ Start a task in an isolated worktree.
   "task_id": "bd-abc123"
 }
 ```
+
+## Run Quality
+
+Commands for running quality gates. These enforce the core value of
+vibraphone: every code change goes through tests, lint, format, and
+review before it can be committed.
 
 ### `/v test [--component NAME]`
 
@@ -279,6 +314,12 @@ Request code review.
   "files": ["src/main.py", "src/utils.py"]
 }
 ```
+
+## Commit & Merge
+
+Commands for committing and integrating completed work. These handle
+the git workflow: committing with quality gate enforcement, merging
+to main, and cleaning up worktrees.
 
 ### `/v commit <message>`
 
@@ -372,6 +413,12 @@ Mark task as completed.
 }
 ```
 
+## Session Management
+
+Commands for checking project state and recovering from interruptions.
+Use these when you need to understand current status or resume after
+a break.
+
 ### `/v recover`
 
 Resume interrupted session.
@@ -395,6 +442,10 @@ Show project health metrics.
 **MCP Tool**: `vibraphone_health_check`
 
 No parameters required.
+
+## Troubleshooting
+
+[Will be populated by Plan 11-03]
 
 ## Workflow Shortcuts
 
