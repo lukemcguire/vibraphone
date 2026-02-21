@@ -38,6 +38,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 12-01]: Helper function stays local to scaffold_tools.py (not shared utils)
 - [Phase 12-01]: Error includes truncated received value (100 char max) for debugging
 - [Phase 10-05]: README.md scope is user-facing; technical MCP protocol content belongs in v.md
+- [Phase 11-05]: Process section inserted after frontmatter with 18 subcommand routing to MCP tools
 
 ### Pending Todos
 
@@ -58,6 +59,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [x] Complete plan 12-02 (defensive parsing for configure_stack)
 - [x] Complete plan 12-03 (defensive parsing for request_code_review)
 - [x] Complete plan 12-04 (verification checkpoint)
+- [x] Complete plan 11-05 (gap closure - v.md process section)
 
 ### Blockers/Concerns
 
@@ -67,6 +69,6 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-02-20 — Plan 10-05 executed
-Stopped at: Completed Phase 10-05 (README gap closure)
+Last session: 2026-02-21 — Plan 11-05 executed
+Stopped at: Completed Phase 11-05 (v.md process section gap closure)
 Resume file: Check ROADMAP.md for next phase
