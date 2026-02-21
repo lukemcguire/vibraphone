@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 11-command-documentation
-source: [11-01-SUMMARY.md, 11-02-SUMMARY.md, 11-03-SUMMARY.md, 11-04-SUMMARY.md]
+source: [11-01-SUMMARY.md, 11-02-SUMMARY.md, 11-03-SUMMARY.md, 11-04-SUMMARY.md, 11-05-SUMMARY.md]
 started: 2026-02-20T12:00:00Z
-updated: 2026-02-21T00:00:00Z
+updated: 2026-02-21T22:35:00Z
 ---
 
 ## Current Test
@@ -26,9 +26,8 @@ result: pass
 
 ### 4. Dict-Heavy Command Documentation (init)
 expected: /v init documentation with typical usage, edge cases, and WRONG/RIGHT stringification patterns
-result: issue
-reported: "The documentation is there, but the commands don't actually work"
-severity: major
+result: pass
+resolved_by: 11-05-PLAN.md
 
 ### 5. Dict-Heavy Command Documentation (configure-stack)
 expected: /v configure-stack documentation with single component, multi-component examples, and WRONG/RIGHT patterns
@@ -73,19 +72,16 @@ result: pass
 ## Summary
 
 total: 14
-passed: 13
-issues: 1
+passed: 14
+issues: 0
 pending: 0
 skipped: 0
 
 ## Gaps
 
 - truth: "/v init command invokes vibraphone_init_project MCP tool successfully"
-  status: failed
-  reason: "User reported: init_project command doesn't work - slash command mechanism may not be invoking MCP tool correctly"
-  severity: major
-  test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  status: resolved
+  resolved_by: 11-05-PLAN.md
+  resolved_at: 2026-02-21
+  original_reason: "User reported: init_project command doesn't work - slash command mechanism may not be invoking MCP tool correctly"
+  fix: "Added <process> section to v.md with argument parsing and MCP tool routing"
