@@ -8,6 +8,74 @@ allowed-tools:
   - mcp__vibraphone
 ---
 
+<process>
+
+## 1. Parse Arguments
+
+Parse $ARGUMENTS to extract:
+- **Subcommand** (required): init, check-prereqs, configure-stack, import-plan,
+  list, next, start, test, lint, format, review, commit, merge, cleanup,
+  complete, status, health, recover, cycle, finish
+- **Flags** with values: --language, --name, --component, --files, --status,
+  --plan, --stitch, --notes
+- **Boolean flags**: --apply (skip preview)
+- **Positional args**: task_id, message
+
+## 2. Route to MCP Tool
+
+Based on subcommand, invoke the appropriate MCP tool:
+
+| Subcommand | MCP Tool | Parameters |
+| ---------- | -------- | ---------- |
+| init | mcp__vibraphone__init_project | preview, values |
+| check-prereqs | mcp__vibraphone__check_prerequisites | (none) |
+| configure-stack | mcp__vibraphone__configure_stack | components, stitch_project_id, preview |
+| import-plan | mcp__vibraphone__import_gsd_plan | phase_number, preview |
+| list | mcp__vibraphone__list_tasks | status, plan |
+| next | mcp__vibraphone__next_ready | (none) |
+| start | mcp__vibraphone__start_task | task_id |
+| test | mcp__vibraphone__run_tests | component |
+| lint | mcp__vibraphone__run_lint | component |
+| format | mcp__vibraphone__run_format | component |
+| review | mcp__vibraphone__request_code_review | task_id, files |
+| commit | mcp__vibraphone__attempt_commit | task_id, message |
+| merge | mcp__vibraphone__merge_task | task_id |
+| cleanup | mcp__vibraphone__cleanup_task | task_id |
+| complete | mcp__vibraphone__complete_task | task_id, notes |
+| status | mcp__vibraphone__recover_session | (none) |
+| health | mcp__vibraphone__health_check | (none) |
+| recover | mcp__vibraphone__recover_session | (none) |
+
+## 3. Handle Preview Commands
+
+For init, configure-stack, import-plan:
+1. If no --apply flag: Call with preview=true, show result, ask to confirm
+2. With --apply or after confirmation: Call with preview=false
+
+## 4. Handle Shortcuts
+
+**cycle:** Run test->lint->format->review in sequence:
+1. mcp__vibraphone__run_tests with {}
+2. mcp__vibraphone__run_lint with {}
+3. mcp__vibraphone__run_format with {}
+4. mcp__vibraphone__request_code_review with {}
+5. Report combined status
+
+**finish:** Run commit->merge->cleanup->complete in sequence:
+1. mcp__vibraphone__attempt_commit with {"message": "<msg>"}
+2. mcp__vibraphone__merge_task with {"task_id": "<id>"}
+3. mcp__vibraphone__cleanup_task with {"task_id": "<id>"}
+4. mcp__vibraphone__complete_task with {"task_id": "<id>"}
+5. Report final status
+
+## 5. Present Response
+
+Show tool response to user:
+- **Success:** Display key information (task ID, status, counts)
+- **Error:** Show error message and suggested next_steps if available
+
+</process>
+
 # Vibraphone Slash Commands
 
 User-friendly slash commands for vibraphone MCP tools.
