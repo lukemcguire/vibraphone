@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 import sys
 from difflib import unified_diff
 from pathlib import Path
@@ -37,8 +39,9 @@ def _celebration_message(project_name: str) -> str:
 \u2502  Project: {project_name:<30} \u2502
 \u2502                                            \u2502
 \u2502  Next steps:                                \u2502
-\u2502  1. Run 'just bootstrap'                     \u2502
-\u2502  2. Add tasks via br add                     \u2502
+\u2502  1. Use configure_stack to set up           \u2502
+\u2502     test/lint commands                      \u2502
+\u2502  2. Add tasks via br add                    \u2502
 \u2502  3. Use MCP tools to execute tasks          \u2502
 \u2502                                            \u2502
 \u2502  Docs: https://github.com/lukemcguire/      \u2502
@@ -358,6 +361,28 @@ async def init_project(
     if justfile_result:
         files_written.append(justfile_result)
 
+    # Initialize beads database (moved from bootstrap recipe)
+    beads_db = project_root / ".beads"
+    if not beads_db.exists():
+        try:
+            # br is the beads_rust CLI tool, expected to be in PATH
+            subprocess.run(["br", "init"], cwd=project_root, check=True, capture_output=True)  # noqa: S607
+            files_written.append(".beads/")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # br might not be installed yet - that's OK, user can run manually
+            pass
+
+    # Copy .env.example to .env if it exists and .env doesn't
+    env_example = project_root / ".env.example"
+    env_file = project_root / ".env"
+    if env_example.exists() and not env_file.exists():
+        shutil.copy(env_example, env_file)
+        files_written.append(".env")
+
+    # Create .vibraphone directory for session state
+    vibraphone_dir = project_root / ".vibraphone"
+    vibraphone_dir.mkdir(exist_ok=True)
+
     # Show celebration if complete
     if not conflicts:
         print(_celebration_message(final_values["project_name"]), file=sys.stderr)
@@ -366,9 +391,8 @@ async def init_project(
             "files_written": files_written,
             "final_values": final_values,
             "next_steps": [
-                "1. Run 'just bootstrap' to initialize project",
-                "2. Use configure_stack to set up test/lint commands",
-                "3. Use import_gsd_plan to import GSD phase tasks",
+                "1. Use configure_stack to set up test/lint commands",
+                "2. Use import_gsd_plan to import GSD phase tasks",
             ],
         }
 

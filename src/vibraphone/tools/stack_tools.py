@@ -13,6 +13,7 @@ from vibraphone.config import (
     STACK_DEFAULTS,
     clear_config_cache,
     find_config_file,
+    get_config,
     get_project_root,
 )
 from vibraphone.mcp_instance import mcp
@@ -20,6 +21,83 @@ from vibraphone.mcp_instance import mcp
 # Section markers for Justfile
 _COMPONENT_RECIPES_START = "# === COMPONENT RECIPES ==="
 _COMPONENT_RECIPES_END = "# === END COMPONENT RECIPES ==="
+
+# Justfile header with shell settings
+_JUSTFILE_HEADER = """set shell := ["bash", "-c"]
+set dotenv-load := true
+"""
+
+# Worktree group - uses nested paths: ~/.vibraphone/worktrees/{project}/{task}
+_STANDARD_WORKTREE_RECIPES = """
+# Create worktree for a task
+[group: 'worktree']
+start-task id:
+    @echo "Creating worktree for {{id}}..."
+    mkdir -p ${VIBRAPHONE_WORKTREES_PATH}/${VIBRAPHONE_PROJECT_NAME}
+    git worktree add -b feat/{{id}} ${VIBRAPHONE_WORKTREES_PATH}/${VIBRAPHONE_PROJECT_NAME}/{{id}} main
+    @echo "Worktree ready at ${VIBRAPHONE_WORKTREES_PATH}/${VIBRAPHONE_PROJECT_NAME}/{{id}}"
+
+# Merge task branch into main
+[group: 'worktree']
+merge-task id:
+    @echo "Merging task {{id}}..."
+    git rebase main feat/{{id}}
+    git merge --no-ff feat/{{id}} -m "Merge feat/{{id}} into main"
+    @echo "Merged feat/{{id}} into main"
+
+# Remove worktree and branch for a task
+[group: 'worktree']
+cleanup-task id:
+    @echo "Cleaning up task {{id}}..."
+    git worktree remove ${VIBRAPHONE_WORKTREES_PATH}/${VIBRAPHONE_PROJECT_NAME}/{{id}} --force
+    git branch -D feat/{{id}} 2>/dev/null || true
+    @echo "Cleaned up feat/{{id}}"
+
+# List active worktrees
+[group: 'worktree']
+list-worktrees:
+    git worktree list
+"""
+
+_STANDARD_BEADS_RECIPES = """
+# Initialize beads database
+[group: 'beads']
+beads-init:
+    br init
+    @echo "Beads initialized."
+
+# Show all tasks as JSON
+[group: 'beads']
+beads-status:
+    br list --json
+
+# Show unblocked tasks as JSON
+[group: 'beads']
+beads-ready:
+    br ready --json
+
+# Flush beads sync queue
+[group: 'beads']
+beads-sync:
+    br sync --flush-only
+
+# Add a task interactively
+[group: 'beads']
+add-task:
+    uv run python scripts/add_task.py
+"""
+
+_STANDARD_SETUP_RECIPES = """
+# Reset project to blank slate (testing/development only)
+[group: 'setup']
+reset:
+    @echo "Resetting project to blank slate..."
+    git worktree list --porcelain | grep '^worktree' | grep -v "$(pwd)" | cut -d' ' -f2 | xargs -r -I{} git worktree remove --force {}
+    rm -rf .vibraphone/ .beads/ .planning/
+    rm -rf .venv __pycache__ .coverage htmlcov .ruff_cache node_modules
+    git checkout -- .
+    @echo "Done. Re-run init_project to reinitialize."
+"""
 
 # Stitch MCP entry template
 STITCH_MCP_ENTRY = {
@@ -37,16 +115,19 @@ def _render_component_recipes(name: str, root: str, commands: dict[str, str]) ->
     """
     lines = [
         f"# Run {name} tests",
+        "[group: 'quality-gate']",
         "[private]",
         f"test-{name} *ARGS:",
         f"    cd {root} && {commands['test_command']} {{ARGS}}",
         "",
         f"# Run {name} linter",
+        "[group: 'quality-gate']",
         "[private]",
         f"lint-{name}:",
         f"    cd {root} && {commands['lint_command']}",
         "",
         f"# Run {name} formatter",
+        "[group: 'quality-gate']",
         "[private]",
         f"format-{name}:",
         f"    cd {root} && {commands['format_command']}",
@@ -67,17 +148,30 @@ def _render_component_section(components: dict[str, dict[str, Any]]) -> str:
     sections.extend(
         [
             "",
-            "# Aggregate test recipe",
+            "# Run lint + test",
+            "[group: 'quality-gate']",
+            "check: lint test",
+            '    @echo "Quality gate passed."',
+            "",
+            "# Run all tests",
+            "[group: 'quality-gate']",
             f"test *ARGS: {test_deps}",
             '    @echo "All tests passed."',
             "",
-            "# Aggregate lint recipe",
+            "# Run all linters",
+            "[group: 'quality-gate']",
             f"lint: {lint_deps}",
             '    @echo "All linting passed."',
             "",
-            "# Aggregate format recipe",
+            "# Run all formatters",
+            "[group: 'quality-gate']",
             f"format: {format_deps}",
             '    @echo "All formatting done."',
+            "",
+            "# Run standalone code review on files",
+            "[group: 'quality-gate']",
+            "review *FILES:",
+            "    uv run python scripts/review.py {FILES}",
             "",
         ]
     )
@@ -100,24 +194,41 @@ def _render_component_section(components: dict[str, dict[str, Any]]) -> str:
 
 
 def _update_justfile_section(justfile_path: Path, component_section: str) -> bool:
-    """Update or insert the component recipes section in Justfile.
+    """Generate complete Justfile with standard recipes + component recipes.
+
+    When justfile exists with init_project stubs, replaces entirely.
+    When justfile exists with component section markers, updates just that section.
 
     Returns True if file was modified.
     """
+    # Build the full justfile content
+    full_content = f"""{_JUSTFILE_HEADER}
+{_STANDARD_WORKTREE_RECIPES}
+{_STANDARD_BEADS_RECIPES}
+{_STANDARD_SETUP_RECIPES}
+{component_section}
+"""
+
     if not justfile_path.exists():
-        # Create new Justfile with component section
-        justfile_path.write_text(component_section + "\n")
+        justfile_path.write_text(full_content)
         return True
 
     content = justfile_path.read_text()
 
+    # Check if this is a stub justfile from init_project (has placeholder echo)
+    is_stub = "Configure with configure_stack tool" in content
+
+    if is_stub:
+        # Replace entire file - it's just stubs from init_project
+        justfile_path.write_text(full_content)
+        return True
+
+    # Existing justfile with real content - only update component section
     if _COMPONENT_RECIPES_START in content:
-        # Replace existing section
         start_idx = content.find(_COMPONENT_RECIPES_START)
         end_idx = content.find(_COMPONENT_RECIPES_END) + len(_COMPONENT_RECIPES_END)
         new_content = content[:start_idx] + component_section + content[end_idx:]
     else:
-        # Append section
         new_content = content.rstrip() + "\n\n" + component_section + "\n"
 
     if new_content != content:
@@ -261,6 +372,11 @@ async def configure_stack(
     # Get project root
     project_root = get_project_root()
 
+    # Get worktrees path and project name from config
+    config = get_config()
+    worktrees_path = config.worktrees_path
+    project_name = config.project.name
+
     # Read existing vibraphone.yaml
     config_path = find_config_file()
     existing_config: dict[str, Any] = {}
@@ -299,6 +415,10 @@ async def configure_stack(
 
     yaml_path = config_path if config_path else project_root / "vibraphone.yaml"
     yaml_path.write_text(yaml_content)
+
+    # Write worktrees path and project name to .env for justfile recipes
+    _update_env_var("VIBRAPHONE_WORKTREES_PATH", str(worktrees_path), project_root)
+    _update_env_var("VIBRAPHONE_PROJECT_NAME", project_name, project_root)
 
     # Handle stitch if provided
     mcp_sync_result = None
