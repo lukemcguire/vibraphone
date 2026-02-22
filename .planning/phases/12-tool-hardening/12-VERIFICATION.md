@@ -2,8 +2,9 @@
 phase: 12-tool-hardening
 verified: 2026-02-19T21:12:00Z
 status: passed
-score: 4/4 must-haves verified
-re_verification: false
+score: 5/5 must-haves verified
+re_verification: true
+gap_closure: 12-05
 
 must_haves_verified:
   truths:
@@ -15,6 +16,9 @@ must_haves_verified:
       status: VERIFIED
     - truth: "All unit tests pass"
       status: VERIFIED
+    - truth: "v configure-stack applies changes successfully after preview"
+      status: VERIFIED
+      gap_closure: "12-05 fixed line 318 to use parsed_components.keys()"
   artifacts:
     - path: "src/vibraphone/tools/scaffold_tools.py"
       status: VERIFIED
