@@ -76,7 +76,7 @@
 | 9. Testing & Documentation | v0.1.0 | 5/5 | Complete | 2026-02-17 |
 | 10. Command Infrastructure | 5/5 | Complete   | 2026-02-20 | 2026-02-19 |
 | 11. Command Documentation | 5/5 | Complete   | 2026-02-21 | 2026-02-20 |
-| 12. Tool Hardening | v0.1.1 | Complete    | 2026-02-20 | 2026-02-20 |
+| 12. Tool Hardening | 5/5 | Complete    | 2026-02-22 | 2026-02-20 |
 
 ---
 
