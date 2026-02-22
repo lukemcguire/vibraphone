@@ -920,26 +920,50 @@ class TestInitProjectDefensiveParsing:
     """Tests for defensive parsing of values parameter in init_project."""
 
     @pytest.mark.asyncio
-    async def test_values_as_json_string_returns_error(self, mocker: Any, tmp_path: Path) -> None:
-        """Passing values as a JSON string returns ParameterStringified error."""
+    async def test_values_as_json_string_parses_successfully(self, mocker: Any, tmp_path: Path) -> None:
+        """Passing values as a JSON string parses successfully and proceeds."""
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.check_prereqs",
+            return_value={
+                "platform": "Linux",
+                "prerequisites": [],
+                "all_installed": True,
+                "shell_script": "",
+                "missing_core": [],
+            },
+        )
+        mocker.patch(
+            "vibraphone.tools.scaffold_tools.detect_project_metadata",
+            return_value={
+                "project_name": "test-project",
+                "git_remote": None,
+                "language": "python",
+                "test_framework": "pytest",
+                "ci_platform": None,
+                "worktrees_path": "~/.vibraphone/worktrees",
+            },
+        )
+        mocker.patch("vibraphone.tools.scaffold_tools._handle_gitignore_append", return_value=None)
+        mocker.patch("vibraphone.tools.scaffold_tools._write_non_conflicting_files", return_value=[])
+
         from vibraphone.tools.scaffold_tools import init_project
 
         json_string = '{"project_name": "test"}'
-        result = await init_project.fn(str(tmp_path), values=json_string)
+        result = await init_project.fn(str(tmp_path), preview=False, values=json_string)
 
-        assert result["status"] == "error"
-        assert result["error_type"] == "ParameterStringified"
+        # Should NOT return an error - JSON string parses successfully
+        assert result["status"] != "error"
 
     @pytest.mark.asyncio
-    async def test_values_as_json_string_includes_wrong_right_table(self, mocker: Any, tmp_path: Path) -> None:
-        """Error message includes WRONG/RIGHT table format."""
+    async def test_values_as_invalid_json_returns_error(self, mocker: Any, tmp_path: Path) -> None:
+        """Passing values as invalid JSON string returns ParameterParseError."""
         from vibraphone.tools.scaffold_tools import init_project
 
-        json_string = '{"project_name": "test"}'
-        result = await init_project.fn(str(tmp_path), values=json_string)
+        result = await init_project.fn(str(tmp_path), values='{"unclosed')
 
-        assert "WRONG" in result["message"]
-        assert "RIGHT" in result["message"]
+        assert result["status"] == "error"
+        assert result["error_type"] == "ParameterParseError"
+        assert "Failed to parse" in result["message"]
 
     @pytest.mark.asyncio
     async def test_values_as_dict_works_normally(self, mocker: Any, tmp_path: Path) -> None:

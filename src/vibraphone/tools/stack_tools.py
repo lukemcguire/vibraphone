@@ -30,38 +30,6 @@ STITCH_MCP_ENTRY = {
 }
 
 
-def _build_stringification_error(
-    param_name: str,
-    received: str,
-    example_wrong: str,
-    example_right: str,
-) -> dict[str, Any]:
-    """Build educational error for stringified parameter.
-
-    When Claude passes a dict parameter as a JSON string (due to MCP serialization),
-    this helper returns a helpful error message with WRONG/RIGHT examples.
-    """
-    display_value = received if len(received) <= 100 else received[:97] + "..."
-
-    return {
-        "status": "error",
-        "error_type": "ParameterStringified",
-        "message": f"""Parameter `{param_name}` received as a JSON string
-instead of a native object.
-
-| WRONG                          | RIGHT                        |
-| ------------------------------ | ---------------------------- |
-| `{example_wrong}` | `{example_right}` |
-
-Remove the quotes around the object.""",
-        "received": display_value,
-        "next_steps": [
-            f"Pass `{param_name}` as a native object, not a JSON string.",
-            "MCP protocol handles JSON serialization automatically.",
-        ],
-    }
-
-
 def _render_component_recipes(name: str, root: str, commands: dict[str, str]) -> str:
     """Render per-component Justfile recipes for a single component.
 
@@ -250,7 +218,7 @@ def _sync_mcp_config(*, stitch_enabled: bool, project_root: Path) -> dict:
 
 @mcp.tool
 async def configure_stack(
-    components: dict[str, dict[str, Any]],
+    components: str | dict[str, dict[str, Any]],
     stitch_project_id: str | None = None,
     *,
     preview: bool = True,
@@ -269,14 +237,26 @@ async def configure_stack(
     Returns:
         dict with status, justfile content (preview) or path (written), vibraphone_yaml content (preview) or path (written).
     """
-    # Defensive check for stringified components parameter
+    import json
+
+    # Handle stringified components parameter (Claude Code passes dicts as JSON strings)
+    parsed_components: dict[str, dict[str, Any]]
     if isinstance(components, str):
-        return _build_stringification_error(
-            param_name="components",
-            received=components,
-            example_wrong='components: "{\\"backend\\": {\\"language\\": \\"python\\"}}"',
-            example_right='components: {"backend": {"language": "python"}}',
-        )
+        try:
+            parsed_components = json.loads(components)
+        except json.JSONDecodeError as e:
+            return {
+                "status": "error",
+                "error_type": "ParameterParseError",
+                "message": f"Failed to parse 'components' as JSON: {e}",
+                "received": components[:100] if len(components) > 100 else components,
+                "next_steps": [
+                    "Ensure 'components' is a valid JSON object.",
+                    'Example: {"backend": {"language": "python"}}',
+                ],
+            }
+    else:
+        parsed_components = components
 
     # Get project root
     project_root = get_project_root()
@@ -295,15 +275,15 @@ async def configure_stack(
         stitch_section["project_id"] = "${STITCH_PROJECT_ID}"
 
     # Render content
-    component_section = _render_component_section(components)
-    yaml_content = _render_vibraphone_yaml(components, existing_config)
+    component_section = _render_component_section(parsed_components)
+    yaml_content = _render_vibraphone_yaml(parsed_components, existing_config)
 
     if preview:
         result: dict[str, Any] = {
             "status": "preview",
             "component_section": component_section,
             "vibraphone_yaml": yaml_content,
-            "components": list(components.keys()),
+            "components": list(parsed_components.keys()),
             "next_steps": [
                 "1. Review the proposed Justfile section and vibraphone.yaml",
                 "2. Call configure_stack(..., preview=False) to apply",

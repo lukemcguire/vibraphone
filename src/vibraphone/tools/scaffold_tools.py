@@ -17,39 +17,6 @@ from vibraphone.utils.template_loader import (
 )
 
 
-def _build_stringification_error(
-    param_name: str,
-    received: str,
-    example_wrong: str,
-    example_right: str,
-) -> dict[str, Any]:
-    """Build educational error for stringified parameter.
-
-    When Claude passes a parameter as a JSON string instead of a native object,
-    return this error to educate about the correct format.
-    """
-    # Truncate long values for readability
-    display_value = received if len(received) <= 100 else received[:97] + "..."
-
-    return {
-        "status": "error",
-        "error_type": "ParameterStringified",
-        "message": f"""Parameter `{param_name}` received as a JSON string
-instead of a native object.
-
-| WRONG                          | RIGHT                        |
-| ------------------------------ | ---------------------------- |
-| `{example_wrong}` | `{example_right}` |
-
-Remove the quotes around the object.""",
-        "received": display_value,
-        "next_steps": [
-            f"Pass `{param_name}` as a native object, not a JSON string.",
-            "MCP protocol handles JSON serialization automatically.",
-        ],
-    }
-
-
 def _progress(message: str, status: str = "OK") -> None:
     """Print progress step with status indicator."""
     indicators = {
@@ -152,21 +119,34 @@ def _check_conflicts(project_root: Path, proposed_files: dict[str, str]) -> tupl
 
 def _validate_init_params(
     project_path: str | None,
-    values: dict[str, Any] | None,
+    values: str | dict[str, Any] | None,
 ) -> tuple[Path, dict[str, Any] | None] | tuple[None, dict[str, Any]]:
     """Validate init_project parameters.
 
     Returns:
-        Tuple of (project_root, None) if valid, or (None, error_dict) if invalid.
+        Tuple of (project_root, parsed_values) if valid, or (None, error_dict) if invalid.
     """
-    # Defensive check for stringified values parameter
-    if values is not None and isinstance(values, str):
-        return None, _build_stringification_error(
-            param_name="values",
-            received=values,
-            example_wrong='values: "{\\"project_name\\": \\"my-app\\"}"',
-            example_right='values: {"project_name": "my-app"}',
-        )
+    import json
+
+    # Handle stringified values parameter (Claude Code passes dicts as JSON strings)
+    parsed_values: dict[str, Any] | None = None
+    if values is not None:
+        if isinstance(values, str):
+            try:
+                parsed_values = json.loads(values)
+            except json.JSONDecodeError as e:
+                return None, {
+                    "status": "error",
+                    "error_type": "ParameterParseError",
+                    "message": f"Failed to parse 'values' as JSON: {e}",
+                    "received": values[:100] if len(values) > 100 else values,
+                    "next_steps": [
+                        "Ensure 'values' is a valid JSON object.",
+                        'Example: {"language": "go", "project_name": "my-app"}',
+                    ],
+                }
+        else:
+            parsed_values = values
 
     # Determine project root
     project_root = Path(project_path) if project_path else Path.cwd()
@@ -177,7 +157,7 @@ def _validate_init_params(
             "next_steps": ["Create the directory first or specify an existing path."],
         }
 
-    return project_root, None
+    return project_root, parsed_values
 
 
 def _check_init_prerequisites() -> dict[str, Any] | None:
@@ -301,7 +281,7 @@ async def check_prerequisites() -> dict[str, Any]:
 @mcp.tool
 async def init_project(
     project_path: str | None = None,
-    values: dict[str, Any] | None = None,
+    values: str | dict[str, Any] | None = None,
     *,
     preview: bool = True,
 ) -> dict[str, Any]:
@@ -324,17 +304,16 @@ async def init_project(
     Returns:
         Dict with status, detected/final values, files info, conflicts, next_steps.
     """
-    # Validate parameters
-    project_root, error = _validate_init_params(project_path, values)
-    if error:
-        return error
-    if project_root is None:  # Type narrowing guard (should never happen)
-        raise RuntimeError
+    # Validate parameters (also parses JSON strings)
+    validation_result = _validate_init_params(project_path, values)
+    if validation_result[0] is None:
+        return validation_result[1]  # Return error dict
+    project_root, parsed_values = validation_result
 
     # Auto-detect values
     _progress("Detecting project metadata")
     detected = detect_project_metadata(project_root)
-    final_values = {**detected, **(values or {})}
+    final_values = {**detected, **(parsed_values or {})}
 
     # Check prerequisites
     _progress("Checking prerequisites")

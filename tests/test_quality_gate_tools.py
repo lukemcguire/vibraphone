@@ -813,24 +813,53 @@ class TestRequestCodeReviewDefensiveParsing:
     """Tests for request_code_review defensive parsing of files parameter."""
 
     @pytest.mark.asyncio
-    async def test_files_as_json_string_returns_error(self, mocker: Any, mock_execution_context) -> None:
-        """Pass files as JSON string returns ParameterStringified error."""
+    async def test_files_as_json_string_parses_successfully(self, mocker: Any, mock_execution_context) -> None:
+        """Pass files as JSON string - should parse and proceed normally."""
+        mock_config = MagicMock()
+        mock_config.circuit_breakers.review.max_attempts = 5
+        mock_config.review.model = "test-model"
+        mocker.patch("vibraphone.tools.quality_gate_tools.get_config", return_value=mock_config)
+
+        mock_state_manager_class = mocker.patch("vibraphone.tools.quality_gate_tools.get_quality_state_manager")
+        mock_state_manager = MagicMock()
+        mock_state_manager.load.return_value = QualityGateState(task_id="test-task")
+        mock_state_manager_class.return_value = mock_state_manager
+
+        mocker.patch(
+            "vibraphone.tools.quality_gate_tools.prepare_files_for_review",
+            new_callable=AsyncMock,
+            return_value=([], "some diff content", None),
+        )
+
+        mock_issue = MagicMock()
+        mock_issue.model_dump.return_value = {"severity": "warning", "message": "OK"}
+        mock_result = MagicMock()
+        mock_result.issues = [mock_issue]
+        mock_result.summary = "Looks good"
+
+        mock_reviewer_class = mocker.patch("vibraphone.tools.quality_gate_tools.CodeReviewer")
+        mock_reviewer = MagicMock()
+        mock_reviewer.review.return_value = mock_result
+        mock_reviewer_class.return_value = mock_reviewer
+
         from vibraphone.tools.quality_gate_tools import request_code_review
 
+        # Pass files as JSON string - should parse successfully
         result = await request_code_review.fn(task_id="test-task", files='["main.py", "test.py"]')
 
-        assert result["status"] == "error"
-        assert result["error_type"] == "ParameterStringified"
+        # Should NOT return an error - should proceed to review
+        assert result["status"] == "APPROVED"
 
     @pytest.mark.asyncio
-    async def test_files_as_json_string_includes_wrong_right_table(self, mocker: Any, mock_execution_context) -> None:
-        """Error message includes WRONG and RIGHT examples."""
+    async def test_files_as_invalid_json_returns_error(self, mocker: Any, mock_execution_context) -> None:
+        """Pass files as invalid JSON string returns ParameterParseError."""
         from vibraphone.tools.quality_gate_tools import request_code_review
 
-        result = await request_code_review.fn(task_id="test-task", files='["main.py", "test.py"]')
+        result = await request_code_review.fn(task_id="test-task", files='["unclosed')
 
-        assert "WRONG" in result["message"]
-        assert "RIGHT" in result["message"]
+        assert result["status"] == "error"
+        assert result["error_type"] == "ParameterParseError"
+        assert "Failed to parse" in result["message"]
 
     @pytest.mark.asyncio
     async def test_files_as_list_works_normally(self, mocker: Any, mock_execution_context) -> None:

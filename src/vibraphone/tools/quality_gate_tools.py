@@ -42,44 +42,6 @@ DANGEROUS_PATTERNS = [
 ]
 
 
-def _build_stringification_error(
-    param_name: str,
-    received: str,
-    example_wrong: str,
-    example_right: str,
-) -> dict:
-    """Build educational error for stringified parameter.
-
-    Args:
-        param_name: Name of the parameter that was stringified.
-        received: The stringified value received.
-        example_wrong: Example of incorrect usage.
-        example_right: Example of correct usage.
-
-    Returns:
-        Error dict with WRONG/RIGHT table format.
-    """
-    display_value = received if len(received) <= 100 else received[:97] + "..."
-
-    return {
-        "status": "error",
-        "error_type": "ParameterStringified",
-        "message": f"""Parameter `{param_name}` received as a JSON string
-instead of a native object.
-
-| WRONG | RIGHT |
-| ----- | ----- |
-| `{example_wrong}` | `{example_right}` |
-
-Remove the quotes around the object.""",
-        "received": display_value,
-        "next_steps": [
-            f"Pass `{param_name}` as a native object, not a JSON string.",
-            "MCP protocol handles JSON serialization automatically.",
-        ],
-    }
-
-
 def is_dangerous_file(file_path: str) -> bool:
     """Check if a file matches dangerous file patterns.
 
@@ -529,8 +491,37 @@ async def run_format(component: str | None = None) -> dict:
     }
 
 
+def _parse_files_param(files: str | list[str] | None) -> tuple[list[str] | None, dict | None]:
+    """Parse files parameter, handling JSON string from MCP.
+
+    Returns:
+        Tuple of (parsed_files, error_dict). If error_dict is not None, parsing failed.
+    """
+    import json
+
+    if files is None:
+        return None, None
+
+    if isinstance(files, str):
+        try:
+            return json.loads(files), None
+        except json.JSONDecodeError as e:
+            return None, {
+                "status": "error",
+                "error_type": "ParameterParseError",
+                "message": f"Failed to parse 'files' as JSON: {e}",
+                "received": files[:100] if len(files) > 100 else files,
+                "next_steps": [
+                    "Ensure 'files' is a valid JSON array.",
+                    'Example: ["main.py", "test.py"]',
+                ],
+            }
+
+    return files, None
+
+
 @mcp.tool
-async def request_code_review(task_id: str | None = None, files: list[str] | None = None) -> dict:
+async def request_code_review(task_id: str | None = None, files: str | list[str] | None = None) -> dict:
     """Request LLM code review of staged changes.
 
     This tool handles staging internally. It stages unstaged files (optional filter),
@@ -544,14 +535,10 @@ async def request_code_review(task_id: str | None = None, files: list[str] | Non
         Dict with status (APPROVED/REJECTED/ESCALATED), issues, summary,
         warnings (blocked dangerous files), attempt, next_steps.
     """
-    # Defensive check for stringified files parameter
-    if files is not None and isinstance(files, str):
-        return _build_stringification_error(
-            param_name="files",
-            received=files,
-            example_wrong='files: "[\\"main.py\\", \\"test.py\\"]"',
-            example_right='files: ["main.py", "test.py"]',
-        )
+    # Handle stringified files parameter (Claude Code passes lists as JSON strings)
+    parsed_files, parse_error = _parse_files_param(files)
+    if parse_error:
+        return parse_error
 
     config = get_config()
     exec_dir, session = get_execution_context()
@@ -573,7 +560,7 @@ async def request_code_review(task_id: str | None = None, files: list[str] | Non
         return escalation
 
     # Prepare files for review
-    blocked_files, diff_content, error = await prepare_files_for_review(files, exec_dir)
+    blocked_files, diff_content, error = await prepare_files_for_review(parsed_files, exec_dir)
     if error:
         return error
 

@@ -368,26 +368,30 @@ class TestConfigureStackDefensiveParsing:
     """Tests for configure_stack defensive parsing."""
 
     @pytest.mark.asyncio
-    async def test_components_as_json_string_returns_error(self) -> None:
-        """Passing components as JSON string should return error."""
+    async def test_components_as_json_string_parses_successfully(self, tmp_path: Path, mocker: Any) -> None:
+        """Passing components as JSON string parses successfully and proceeds."""
+        mocker.patch("vibraphone.tools.stack_tools.get_project_root", return_value=tmp_path)
+        mocker.patch("vibraphone.tools.stack_tools.find_config_file", return_value=None)
+
         from vibraphone.tools.stack_tools import configure_stack
 
         components_str = '{"backend": {"language": "python"}}'
         result = await configure_stack.fn(components_str, preview=True)
 
-        assert result["status"] == "error"
-        assert result["error_type"] == "ParameterStringified"
+        # Should NOT return an error - JSON string parses successfully
+        assert result["status"] == "preview"
+        assert "component_section" in result
 
     @pytest.mark.asyncio
-    async def test_components_as_json_string_includes_wrong_right_table(self) -> None:
-        """Error message should contain WRONG/RIGHT table format."""
+    async def test_components_as_invalid_json_returns_error(self) -> None:
+        """Passing components as invalid JSON string returns ParameterParseError."""
         from vibraphone.tools.stack_tools import configure_stack
 
-        components_str = '{"backend": {"language": "python"}}'
-        result = await configure_stack.fn(components_str, preview=True)
+        result = await configure_stack.fn('{"unclosed', preview=True)
 
-        assert "WRONG" in result["message"]
-        assert "RIGHT" in result["message"]
+        assert result["status"] == "error"
+        assert result["error_type"] == "ParameterParseError"
+        assert "Failed to parse" in result["message"]
 
     @pytest.mark.asyncio
     async def test_components_as_dict_works_normally(self, tmp_path: Path, mocker: Any) -> None:
