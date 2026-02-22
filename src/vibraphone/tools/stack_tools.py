@@ -315,7 +315,7 @@ async def configure_stack(
         "justfile_path": str(justfile_path),
         "justfile_changed": justfile_changed,
         "vibraphone_yaml_path": str(yaml_path),
-        "components": list(components.keys()),
+        "components": list(parsed_components.keys()),
         "stitch_config": mcp_sync_result,
         "next_steps": [
             "1. import_gsd_plan(phase_number) to import phase tasks",
