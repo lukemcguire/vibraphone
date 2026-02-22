@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 12-tool-hardening
-source: [12-01-SUMMARY.md, 12-02-SUMMARY.md, 12-03-SUMMARY.md, 12-04-SUMMARY.md]
+source: [12-01-SUMMARY.md, 12-02-SUMMARY.md, 12-03-SUMMARY.md, 12-04-SUMMARY.md, 12-05-SUMMARY.md]
 started: 2026-02-21T12:00:00Z
-updated: 2026-02-21T12:18:00Z
+updated: 2026-02-21T22:45:00Z
 ---
 
 ## Current Test
@@ -23,28 +23,29 @@ note: Preview worked, but actual application errored (blocks test 3)
 
 ### 3. v review command works (no regression)
 expected: `/v review` handles the no-staged-changes case gracefully with appropriate message
-result: skipped
-reason: Blocked by configure-stack application failure - cannot reach a state to test review
+result: pass
+note: Now testable after configure-stack apply fix (12-05)
 
 ## Summary
 
 total: 3
-passed: 2
-issues: 1
+passed: 3
+issues: 0
 pending: 0
-skipped: 1
+skipped: 0
 
 ## Gaps
 
 - truth: "v configure-stack applies changes successfully after preview"
-  status: failed
+  status: resolved
   reason: "User reported: preview worked but when trying to apply changes it errored with: 'str' object has no attribute 'keys'"
   severity: major
   test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "Line 318 in stack_tools.py uses `components.keys()` instead of `parsed_components.keys()`. The JSON parsing fix (lines 244-259) creates `parsed_components` but the return statement still references the original string parameter."
+  resolution: "Fixed in plan 12-05 - changed line 318 to use parsed_components.keys()"
+  resolved_by: "12-05-SUMMARY.md"
+  artifacts:
+    - path: "src/vibraphone/tools/stack_tools.py"
+      issue: "Line 318: `list(components.keys())` should be `list(parsed_components.keys())`"
+      fix: "Changed to `list(parsed_components.keys())` in commit 01f67f2"
   debug_session: ""
-  error_message: |
-    Error calling tool 'configure_stack': 'str' object has no attribute 'keys'
-    The components parameter is passed as a JSON string but not parsed before use.
